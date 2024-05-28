@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "dftio"
+version = "0.0.0"
+license = "MIT"
+description = "dftio is to assist machine learning communities to transcript DFT output into a format that is easy to read or used by machine learning models."
+authors = ["Z. Zhouyin <zhouyinzhanghao@gmail.com>"]
+readme = "README.md"
+repository = "https://github.com/floatingCatty/dftio"
+
+[tool.poetry.dependencies]
+python = ">=3.8"
+pytest = ">=7.2.0"
+pytest-order = "1.2.0"
+numpy = "*"
+scipy = "1.9.1"
+matplotlib = "*"
+torch = ">=1.13.0"
+ase = "*"
+pyyaml = "*"
+future = "*"
+dargs = "0.4.4"
+e3nn = ">=0.5.1"
+h5py = "3.7.0"
+lmdb = "1.4.1"
+
+[tool.poetry.scripts]
+dftio = 'dftio.__main__:main'
+
+[build-system]
+requires = ["poetry-core", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+
+[tool.poetry-dynamic-versioning]
+enable = true
+vcs = "git"
+strict = true
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}
+    {%- endif -%}
+"""
