@@ -19,12 +19,13 @@ dftio is to assist machine learning communities to transcript DFT output into a 
 5. kpoint eigenvalue
 
 ### 对接软件
-1. ABACUS
-2. SEASTA
-3. Wannier
-4. Gaussian
-5. PYSCF
-6. VASP
+1. RESCU
+2. ABACUS
+3. SEASTA
+4. Wannier
+5. Gaussian
+6. PYSCF
+7. VASP
 
 ### 基础的数据类接口
 应该提供一个比较基本的数据类，可以加载我们parse出的数据类型，让想拿这个搞ML算法的人可以直接用这个数据集加载已经有的数据，或者在这个基础上魔改一下

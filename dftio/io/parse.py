@@ -216,9 +216,9 @@ class Parser(ABC):
 
         return True
     
-    def write_lmdb(self, idx, outroot, prefix, eigenvalue: bool=False, hamiltonian: bool=False, overlap: bool=False, density_matrix: bool=False):
+    def write_lmdb(self, idx, outroot, eigenvalue: bool=False, hamiltonian: bool=False, overlap: bool=False, density_matrix: bool=False):
         os.makedirs(outroot, exist_ok=True)
-        out_dir = os.path.join(outroot, prefix+".lmdb")
+        out_dir = os.path.join(outroot, "data.lmdb")
         lmdb_env = lmdb.open(os.path.join(out_dir), map_size=1048576000000)
         structure = self.get_structure(idx)
 

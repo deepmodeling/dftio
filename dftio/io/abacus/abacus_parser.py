@@ -3,7 +3,7 @@ from scipy.linalg import block_diag
 import re
 from tqdm import tqdm
 from collections import Counter
-from ...constants import orbitalId, ABACUS2DeePTB
+from ...constants import orbitalId, ABACUS2DFTIO
 import ase
 import dpdata
 import os
@@ -23,6 +23,7 @@ class AbacusParser(Parser):
         super(AbacusParser, self).__init__(root, prefix)
         self.raw_sys = [dpdata.LabeledSystem(self.raw_datas[idx], fmt='abacus/'+self.get_mode(idx)) for idx in range(len(self.raw_datas))]
     
+    # essential
     def get_structure(self, idx):
         sys = self.raw_sys[idx]
         
@@ -44,6 +45,7 @@ class AbacusParser(Parser):
 
         return mode
     
+    # essential
     def get_eigenvalue(self, idx):
         path = self.raw_datas[idx]
         mode = self.get_mode(idx)
@@ -71,6 +73,7 @@ class AbacusParser(Parser):
             
         return {_keys.ENERGY_EIGENVALUE_KEY: eigs, _keys.KPOINT_KEY: kpts}
     
+    # essential
     def get_basis(self, idx):
         mode = self.get_mode(idx)
         logfile = "running_"+mode+".log"
@@ -109,6 +112,7 @@ class AbacusParser(Parser):
         
         return basis
     
+    # essential
     def get_blocks(self, idx, hamiltonian=True, overlap=False, density_matrix=False):
         mode = self.get_mode(idx)
         logfile = "running_"+mode+".log"
@@ -311,7 +315,7 @@ class AbacusParser(Parser):
                                                     np.array(line4).astype(np.int32)), shape=(norbits, norbits), dtype=np.complex64).toarray()
                     for index_site_i in range(nsites):
                         for index_site_j in range(nsites):
-                            key_str = f"{index_site_i + 1}_{index_site_j + 1}_{R_cur[0]}_{R_cur[1]}_{R_cur[2]}"
+                            key_str = f"{index_site_i}_{index_site_j}_{R_cur[0]}_{R_cur[1]}_{R_cur[2]}"
                             mat = hamiltonian_cur[(site_norbits_cumsum[index_site_i]
                                                     - site_norbits[index_site_i]) * (1 + spinful):
                                                     site_norbits_cumsum[index_site_i] * (1 + spinful),
@@ -335,8 +339,8 @@ class AbacusParser(Parser):
 
         if max(*l_lefts, *l_rights) > 5:
             raise NotImplementedError("Only support l = s, p, d, f, g, h.")
-        block_lefts = block_diag(*[ABACUS2DeePTB[l_left] for l_left in l_lefts])
-        block_rights = block_diag(*[ABACUS2DeePTB[l_right] for l_right in l_rights])
+        block_lefts = block_diag(*[ABACUS2DFTIO[l_left] for l_left in l_lefts])
+        block_rights = block_diag(*[ABACUS2DFTIO[l_right] for l_right in l_rights])
 
         return block_lefts @ mat @ block_rights.T
 
