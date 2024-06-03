@@ -1,0 +1,112 @@
+------------------------------------------------------------
+Beginning self-consistent calculation at 2024:05:30::10:31:26
+------------------------------------------------------------
+
+********************* How to cite RESCU ********************
+*      Michaud-Rioux, V., Zhang, L., & Guo, H. (2016).     *
+*      RESCU: A real space electronic structure method.    *
+*      Journal of Computational Physics, 307, 593-613.     *
+*      https://doi.org/10.1016/j.jcp.2015.12.014           *
+************************************************************
+
+------------------------------------------------------------
+## INFO ##
+RESCU version (path)             = 2022B [2.8.1] (/home/zhanghao/rescu-2.8.1/src)
+Calculation type                 = self-consistent
+## PSEUDOPOTENTIAL ##
+Pseudopotential for Al           = /home/zhanghao/rescu-2.8.1/PotentialData/psdojo_pbe_v0.4-TM-PBE.4/psdojo_pbe_v0.4/Al_PBE_OV/Al_PBE_OV_DZP.mat
+## BASIS ##
+Calculation basis                = LCAO
+Number of basis functions        = 13
+## DOMAIN ##
+Lattice vectors (Bohr)           = [0.000e+00,3.826e+00,3.826e+00]
+                                   [3.826e+00,0.000e+00,3.826e+00]
+                                   [3.826e+00,3.826e+00,0.000e+00]
+Low resolution N                 = [9,9,9]
+Boundary types                   = [1,1,1]
+Differentiation method           = fft (1)
+Interpolation method (order)     = fft (8)
+## ATOMS ##
+Number of (elements,atoms)       = (1,1)
+Number of electrons              = 3
+## SPIN ##
+Spin type                        = degenerate
+## KPOINT ##
+Monkhorst-Pack grid              = [3,3,3]
+K-point grid shift               = [0.00,0.00,0.00]
+Reduced k-grid size              = 14
+Sampling method (smearing)       = fermi-dirac (2.721e-02 eV)
+## FUNCTIONAL ##
+LibXC                            = 0
+XC functional                    = XC_LDA_X:XC_LDA_C_PW
+## EIGENSOLVER ##
+Number of bands                  = 10
+## MIXING ##
+Mixing algorithm                 = pulay
+Mixing type                      = potential
+Mixing history                   = 20
+Mixing fraction                  = 2.000e-01
+Mixing metric                    = nonuniform
+Mixing tolerance (Rho,Etot)      = (1.000e-05,1.000e-05)
+## OPTION ##
+Maximal number of SCF iterations = 100
+------------------------------------------------------------
+Planning orbital-to-real-space conversion              0.048
+Generating Boolean overlap matrix                      0.062
+Calculating local coverage indices                     0.012
+Generating overlap and kinetic energy matrices         0.330
+Generating non-local potential (AO)                    0.141
+Merging non-local potential and kinetic energy         0.045
+Generating neutral atom potential                      0.072
+Generating isolated atom density                       0.053
+Generating initial density                             0.006
+Generating partial core density                        0.049
+Generating 'isolated atom' potential                   0.032
+Generating effective potential                         0.059
+.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
+The Hamiltonian was generated in                       0.860
+------------------------------------------------------------
+------------------------------------------------------------
+Computing short-range energy and forces                0.162
+------------------------------------------------------------
+------------------------------------------------------------
+#iter | Etot       dRho      dE        dt        time
+#   1 | -2.278e+00 1.670e-01 1.000e+00 3.138e-01 10:31:27
+#   2 | -2.279e+00 1.627e-03 2.301e-04 1.278e-01 10:31:28
+#   3 | -2.282e+00 6.184e-03 9.077e-04 1.203e-01 10:31:28
+#   4 | -2.282e+00 6.152e-05 2.029e-05 1.163e-01 10:31:28
+#   5 | -2.282e+00 1.298e-05 1.322e-06 1.659e-01 10:31:28
+#   6 | -2.282e+00 2.577e-08 2.577e-07 9.244e-02 10:31:28
+.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
+Self-consistent time                                   0.965
+------------------------------------------------------------
+------------------------------------------------------------
+Computing energy density matrix:                       0.008
+Computing orthogonalization forces:                    0.306
+Computing density matrix:                              0.006
+Computing kinetic energy operator forces:              0.010
+Computing non-local forces:                            0.210
+Computing effective potential forces:                  0.069
+Computing core-correction forces:                      0.033
+Computing local pseudo-potential forces:               0.088
+.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-
+The forces were calculated in:                         0.744
+------------------------------------------------------------
+------------------------------------------------------------
+Saving results to disk
+Generating Hartree potential                           0.001
+Generating vdh                                         0.001
+Generating exchange-correlation potential              0.002
+Generating Hartree potential                           0.001
+Generating vdh                                         0.000
+Generating exchange-correlation potential              0.002
+Generating effective (local) potential                 0.001
+Generating Hartree potential                           0.001
+Generating vdh                                         0.000
+Generating exchange-correlation potential              0.002
+Generating effective (local) potential                 0.000
+Saving time                                            3.217
+------------------------------------------------------------
+------------------------------------------------------------
+Finishing self-consistent calculation at 2024:05:30::10:31:32
+------------------------------------------------------------

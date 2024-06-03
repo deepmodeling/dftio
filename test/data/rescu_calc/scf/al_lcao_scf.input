@@ -1,0 +1,14 @@
+LCAO.status = true
+info.savepath = 'results/al_lcao_scf'
+info.calculationType = 'self-consistent'
+atom.element = 1
+atom.xyz = [0 0 0]
+domain.latvec = ~eye(3)/2*7.652445391; %  positions in angstrom
+domain.lowres = 2/3
+element(1).species = 'Al'
+element(1).path = '../rescu-2.8.1/PotentialData/psdojo_pbe_v0.4-TM-PBE.4/psdojo_pbe_v0.4/Al_PBE_OV/Al_PBE_OV_DZP.mat'
+functional.list = {'XC_LDA_X','XC_LDA_C_PW'}
+eigensolver.emptyBand = 8
+kpoint.gridn = [3,3,3]
+option.saveLevel = 1
+option.saveLCAOHam = true

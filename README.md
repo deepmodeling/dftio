@@ -1,31 +1,92 @@
-# dftio
+# dftio Developer Guide
 dftio is to assist machine learning communities to transcript DFT output into a format that is easy to read or used by machine learning models.
 
+# How to use
+```bash
+usage: dftio parse [-h] [-ll {DEBUG,3,INFO,2,WARNING,1,ERROR,0}] [-lp LOG_PATH] [-m MODE] [-r ROOT] [-p PREFIX] [-o OUTROOT] [-f FORMAT] [-ham] [-ovp] [-dm] [-eig]
 
-# 这里记录下parser需要的一些功能
+optional arguments:
+  -h, --help            show this help message and exit
+  -ll {DEBUG,3,INFO,2,WARNING,1,ERROR,0}, --log-level {DEBUG,3,INFO,2,WARNING,1,ERROR,0}
+                        set verbosity level by string or number, 0=ERROR, 1=WARNING, 2=INFO and 3=DEBUG (default: INFO)
+  -lp LOG_PATH, --log-path LOG_PATH
+                        set log file to log messages to disk, if not specified, the logs will only be output to console (default: None)
+  -m MODE, --mode MODE  The name of the DFT software. (default: abacus)
+  -r ROOT, --root ROOT  The root directory of the DFT files. (default: ./)
+  -p PREFIX, --prefix PREFIX
+                        The prefix of the DFT files under root. (default: frame)
+  -o OUTROOT, --outroot OUTROOT
+                        The output root directory. (default: ./)
+  -f FORMAT, --format FORMAT
+                        The output root directory. (default: dat)
+  -ham, --hamiltonian   Whether to parse the Hamiltonian matrix. (default: False)
+  -ovp, --overlap       Whether to parse the Overlap matrix (default: False)
+  -dm, --density_matrix
+                        Whether to parse the Density matrix (default: False)
+  -eig, --eigenvalue    Whether to parse the kpoints and eigenvalues (default: False)
+```
 
-## parser 抽象类
-### 对于不同的软件接口，读取的方式可以不同，但是最大程度的可以约束一个读取完之后的基本格式，比如数据类型，数据的shape
-### 有一个基本格式之后，对于输出的形式，由于内部存储格式相同，输出也可以提前固定，比如我们可以指定几种输出的存储形式，写好方法，后续对接其他软件只需要写好获取这些物理量的方法，输出格式不用管，就可以直接调抽象类。
+# Package Structure
+The main structure of dftio contrains three module:
 
-### 需要实现的物理量：
-1. 原子结构信息，dpdata直接拿
-2. 场 - p(r) V_h(r) V_xc(r) (x,y,z) - f(x,y,z)
+`data`: Containing the basic graph and dataset / dataloader implemented align with pytorch-geometric convension. By using the dataset and graph class provided, user only need to concentrate on building powerful machine learning models.
+
+`datastruct`: This module contrains the data structure class for the physical quantities that is supported by dftio. For example, the hamiltonian/overlap/density matrix, and the field quantities such as charge density distribution function, potential function and so on.
+
+`io`: IO class is the interfaces of dftio class to all DFT packages. Each DFT that dftio supported cooresponding to a submodule in `io`. Developer only need to implement several parsing functions in each submodule, and summit them by inheriting the parser class and register into the parser collection class. NOTE: for further support of parallization, parsing each DFT snapshot need to be independent.
+
+```
+|-- dftio
+|   |-- __init__.py
+|   |-- __main__.py
+|   |-- constants.py
+|   |-- data
+|   |   `-- _keys.py
+|   |-- datastruct
+|   |-- io
+|   |   |-- __init__.py
+|   |   |-- abacus
+|   |   |   `-- abacus_parser.py
+|   |   |-- parse.py
+|   |   `-- rescu
+|   |       `-- rescu_parser.py
+|   |-- logger.py
+|   |-- register.py
+|   `-- utils.py
+|-- example
+|-- pyproject.toml
+`-- test
+```
+
+# What need to write:
+in `io` class, you need to create a submodule for your own DFT package, and implement the following method:
+
+1. get_structure(idx: int): idx is the index of ith target DFT output folder. the output need to be a dict of structure data, containing:
+    - _keys.ATOMIC_NUMBERS_KEY: atomic number, shape [natom,]
+    - _keys.PBC_KEY: periodic boundary condition, shape [3,]
+    - _keys.POSITIONS_KEY: position, unit in Angstrum shape [nframe, natom, 3]
+    - _keys.CELL_KEY: cell, unit in Bohr2Angstrom, shape [nframe, 3, 3]
+2. get_eigenvalues(idx: int): output also need to be a key, containing:
+    - _keys.KPOINT_KEY: kpoints, shape [natom, nband]
+    - _keys.ENERGY_EIGENVALUE_KEY: eigenvalues, shape [nframe, natom, nband]
+3. get_basis(idx: int): This gives out the basis information used in DFT calculation, the format looks like: {Si: "2s2p1d"}
+4. get_blocks(idx: int, hamiltonian: bool=False, overlap: bool=False, density_matrix: bool=False): This function contrains the hamiltonian/overlap/density matrix block data. The returning format is a tuple of three quantities, as ([hamiltonian], [overlap], [density_matrix]). each [...] denote a list of dict, which length equals nframe. Each dict records the blocks data with a structure: {"i_j_Rx_Ry_Rz": np.array(...)}
+
+A example should be added into test/data for further testing
+
+# Supported Physical Quantities：
+1. atomic structure
+2. field - p(r) V_h(r) V_xc(r) (x,y,z) - f(x,y,z)
     - p(r) - LCAO (C_i)
-3. O(r,r') - H(r,r'), P(r,r), S(r,r') (i,j,R) -> []
-    - Gaussian
-    - VASP PW, <f|H|f>
-4. Wave Function
+3. Operator under local basis: O(r,r') - H(r,r'), P(r,r), S(r,r') (i,j,R) -> []
+4. Projection of scalar field on local basis
 5. kpoint eigenvalue
 
-### 对接软件
+# Supported DFT software
 1. RESCU
 2. ABACUS
-3. SEASTA
+3. SIESTA
 4. Wannier
 5. Gaussian
 6. PYSCF
 7. VASP
-
-### 基础的数据类接口
-应该提供一个比较基本的数据类，可以加载我们parse出的数据类型，让想拿这个搞ML算法的人可以直接用这个数据集加载已经有的数据，或者在这个基础上魔改一下
