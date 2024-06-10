@@ -83,10 +83,22 @@ A example should be added into test/data for further testing
 5. kpoint eigenvalue
 
 # Supported DFT software
+## done
 1. RESCU
 2. ABACUS
-3. SIESTA
-4. Wannier
-5. Gaussian
-6. PYSCF
+
+## ing
+3. SIESTA - Jijie
+4. Gaussian - zixi
+5. PYSCF - feitong
+
+## prospective
+6. PSI4
 7. VASP
+8. Wannier
+
+# Functions
+1. rotation base class of Operator
+2. dtype transform
+3. output visualizable structure file (.vasp, .cif) to parse base class
+4. key_map
