@@ -75,6 +75,7 @@ class AbacusParser(Parser):
     
     # essential
     def get_basis(self, idx):
+        # {"Si": "2s2p1d"}
         mode = self.get_mode(idx)
         logfile = "running_"+mode+".log"
         sys = self.raw_sys[idx]
