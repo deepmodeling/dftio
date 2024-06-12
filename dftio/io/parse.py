@@ -52,7 +52,7 @@ class Parser(ABC):
         """
 
         self.root = root
-        self.predix = prefix
+        self.prefix = prefix
 
         if isinstance(root, list) and all(isinstance(item, str) for item in root):
             self.raw_datas = root
