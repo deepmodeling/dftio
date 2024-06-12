@@ -23,13 +23,7 @@ class SiestaParser(Parser):
             **kwargs
             ):
         super(SiestaParser, self).__init__(root, prefix)
-        
-        # self.struct = self.predix + "/STRUCT.fdf"  #TODO:如何根据实际的结构文件来确定struct的路径?
-        # self.struct = sisl.get_sile(self.struct).read_geometry()
-        # self.hsx = self.prefix + "/Au_cell.HSX"
-        # _,self.system_label = self.find_content(path=self.raw_datas[idx],str_to_find='SystemLabel')
-        
-
+               
 
     def find_content(self,path,str_to_find):
         # 用于存储包含SystemLabel标签的文件及其内容
@@ -51,14 +45,12 @@ class SiestaParser(Parser):
                                 break
                     except:
                         print(f"don't find {str_to_find} in {file_path}")
-        print('file_path:',file_path)
         return file_path, system_label_content   
 
 
     # essential
     def get_structure(self,idx):
         path = self.raw_datas[idx]
-        print('path:',path)
         struct,_ = self.find_content(path= path,str_to_find='AtomicCoordinatesAndAtomicSpecies')
         struct = sisl.get_sile(struct).read_geometry()
         structure = {
@@ -77,16 +69,21 @@ class SiestaParser(Parser):
     # essential
     def get_basis(self,idx):
         # {"Si": "2s2p1d"}
-        _,system_label = self.find_content(path=self.raw_datas[idx],str_to_find='SystemLabel')
-        hsx = self.raw_datas[idx]+ "/"+system_label+".HSX"
-        hamil =  sisl.Hamiltonian.read(hsx)
+        path = self.raw_datas[idx]
+        _,system_label = self.find_content(path=path,str_to_find='SystemLabel')
+
+        # tshs = self.raw_datas[idx]+ "/"+system_label+".TSHS"
+        # hamil =  sisl.Hamiltonian.read(tshs)
+        ORB_INDX = self.raw_datas[idx]+ "/"+system_label+".ORB_INDX"
+        ORB_INDX  = sisl.get_sile(ORB_INDX ).read_basis()
+        na = len(ORB_INDX)
         basis_siesta = {}
         basis = {}
-        for i in range(hamil.na):
-            if hamil.atoms[i].tag not in basis_siesta.keys():
-                basis_siesta[hamil.atoms[i].tag] = []
-                for j in range(hamil.atoms[i].no):
-                    basis_siesta[hamil.atoms[i].tag].append(hamil.atoms[i].orbitals[j].name())
+        for i in range(na):
+            if ORB_INDX[i].tag not in basis_siesta.keys():
+                basis_siesta[ORB_INDX[i].tag] = []
+                for j in range(ORB_INDX[i].no):
+                    basis_siesta[ORB_INDX[i].tag].append(ORB_INDX[i].orbitals[j].name())
 
 
         for atom_type in basis_siesta.keys():
@@ -124,15 +121,15 @@ class SiestaParser(Parser):
         struct,_ = self.find_content(path= path,str_to_find='AtomicCoordinatesAndAtomicSpecies')
         struct = sisl.get_sile(struct).read_geometry()
         na = struct.na
+        element = [struct.atoms[i].Z for i in range(struct.na)]
         
-        hsx = path+ "/"+system_label+".HSX"
-        if os.path.exists(hsx):
-            hamil =  sisl.Hamiltonian.read(hsx)
+        tshs = path+ "/"+system_label+".TSHS"
+        if os.path.exists(tshs):
+            hamil =  sisl.Hamiltonian.read(tshs)
         else:
             raise FileNotFoundError("Hamiltonian file not found.")        
         site_norbits = np.array([hamil.atoms[i].no for i in range(hamil.na)])
         site_norbits_cumsum = site_norbits.cumsum()
-        element = [hamil.atoms[i].Z for i in range(hamil.na)]
 
         basis = self.get_basis(idx)      
         spinful = False #TODO: add support for spinful
@@ -189,8 +186,8 @@ class SiestaParser(Parser):
                     hamiltonian_dict.update(dict(zip(keys, block)))
             
         if overlap:
-            if os.path.exists(hsx):
-                ovp =  sisl.Overlap.read(hsx)
+            if os.path.exists(tshs):
+                ovp =  sisl.Overlap.read(tshs)
             else:
                 raise FileNotFoundError("Overlap file not found.")
             
