@@ -208,7 +208,7 @@ class Parser(ABC):
                         default_group[key_str] = value
         
         if density_matrix:
-            with h5py.File(os.path.join(out_dir, "density_matrixs.h5"), 'w') as fid:
+            with h5py.File(os.path.join(out_dir, "density_matrices.h5"), 'w') as fid:
                 for i in range(len(dm)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in dm[i].items():
