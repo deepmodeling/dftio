@@ -65,8 +65,8 @@ class SiestaParser(Parser):
             _keys.ATOMIC_NUMBERS_KEY: np.array([struct.atoms[i].Z for i in range(struct.na)], dtype=np.int32),
             _keys.PBC_KEY: np.array([True, True, True]) # abacus does not allow non-pbc structure
         }
-        structure[_keys.POSITIONS_KEY] = struct.xyz.astype(np.float32)
-        structure[_keys.CELL_KEY] = struct.cell.astype(np.float32)
+        structure[_keys.POSITIONS_KEY] = struct.xyz.astype(np.float32)[np.newaxis, :, :]
+        structure[_keys.CELL_KEY] = struct.cell.astype(np.float32)[np.newaxis, :, :]
 
         return structure
     
@@ -210,8 +210,9 @@ class SiestaParser(Parser):
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
-                    block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
-                                            l_dict[si], l_dict[sj])
+                    # block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
+                    #                         l_dict[si], l_dict[sj])
+                    block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
                     overlap_dict.update(dict(zip(keys, block)))
 
         if density_matrix:
