@@ -183,9 +183,9 @@ class SiestaParser(Parser):
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
-                    # block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
-                    #                         l_dict[si], l_dict[sj])
-                    block = hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
+                    block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
+                                            l_dict[si], l_dict[sj])
+                    # block = hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
                     hamiltonian_dict.update(dict(zip(keys, block)))
             
         if overlap:
@@ -211,9 +211,9 @@ class SiestaParser(Parser):
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
-                    # block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
-                    #                          l_dict[si], l_dict[sj])
-                    block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
+                    block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
+                                             l_dict[si], l_dict[sj])
+                    # block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
                     overlap_dict.update(dict(zip(keys, block)))
 
         if density_matrix:
