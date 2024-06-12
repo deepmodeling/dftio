@@ -141,8 +141,8 @@ class SiestaParser(Parser):
         central_cell = [int(np.floor(hamil.nsc[i]/2)) for i in range(3)]
         Rvec_list = []
         for rx in range(central_cell[0],hamil.nsc[0]):
-            for ry in range(central_cell[1],hamil.nsc[1]):
-                for rz in range(central_cell[2],hamil.nsc[2]):
+            for ry in range(hamil.nsc[1]):
+                for rz in range(hamil.nsc[2]):
                     Rvec_list.append([rx-central_cell[0],ry-central_cell[1],rz-central_cell[2]])
         Rvec = np.array(Rvec_list)
 
@@ -169,8 +169,8 @@ class SiestaParser(Parser):
             hamil_csr = hamil.tocsr()
             hamil_blocks = []
             for i in range(Rvec.shape[0]):
-                off = hamil.geometry.sc_index(Rvec[i]) * hamil.no
-                hamil_blocks.append(hamil_csr[:,off:off+hamil.no].toarray())
+                off = hamil.geometry.sc_index(Rvec[i]) * hamil.geometry.no
+                hamil_blocks.append(hamil_csr[:,off:off+hamil.geometry.no].toarray())
             hamil_blocks = np.stack(hamil_blocks).astype(np.float32)
 
             for i in range(na):
@@ -183,8 +183,9 @@ class SiestaParser(Parser):
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
-                    block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
-                                            l_dict[si], l_dict[sj])
+                    # block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
+                    #                         l_dict[si], l_dict[sj])
+                    block = hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
                     hamiltonian_dict.update(dict(zip(keys, block)))
             
         if overlap:
@@ -196,8 +197,8 @@ class SiestaParser(Parser):
             ovp_csr = ovp.tocsr()
             ovp_blocks = []
             for i in range(Rvec.shape[0]):
-                off = ovp.geometry.sc_index(Rvec[i]) * ovp.no
-                ovp_blocks.append(ovp_csr[:,off:off+ovp.no].toarray())
+                off = ovp.geometry.sc_index(Rvec[i]) * ovp.geometry.no
+                ovp_blocks.append(ovp_csr[:,off:off+ovp.geometry.no].toarray())
             ovp_blocks = np.stack(ovp_blocks).astype(np.float32)
 
             for i in range(na):
@@ -211,7 +212,7 @@ class SiestaParser(Parser):
                     j_norbs = site_norbits[j]
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
                     # block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
-                    #                         l_dict[si], l_dict[sj])
+                    #                          l_dict[si], l_dict[sj])
                     block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
                     overlap_dict.update(dict(zip(keys, block)))
 
