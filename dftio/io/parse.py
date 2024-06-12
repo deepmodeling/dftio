@@ -175,17 +175,17 @@ class Parser(ABC):
         out_dir = os.path.join(outroot, self.formula(idx=idx)+".{}".format(idx))
         os.makedirs(out_dir, exist_ok=True)
         # The abacus must have PBC, so here we save cell by default
-        np.savetxt(os.path.join(out_dir, "cell.dat"), structure[_keys.CELL_KEY].reshape(-1, 3))
-        np.savetxt(os.path.join(out_dir, "position.dat"), structure[_keys.POSITIONS_KEY].reshape(-1, 3))
-        np.savetxt(os.path.join(out_dir, "atomic_number.dat"), structure[_keys.ATOMIC_NUMBERS_KEY], fmt='%d')
+        np.savetxt(os.path.join(out_dir, "cells.dat"), structure[_keys.CELL_KEY].reshape(-1, 3))
+        np.savetxt(os.path.join(out_dir, "positions.dat"), structure[_keys.POSITIONS_KEY].reshape(-1, 3))
+        np.savetxt(os.path.join(out_dir, "atomic_numbers.dat"), structure[_keys.ATOMIC_NUMBERS_KEY], fmt='%d')
         np.savetxt(os.path.join(out_dir, "pbc.dat"), structure[_keys.PBC_KEY])
 
 
         # write eigenvalue
         if eigenvalue:
             eigstatus = self.get_eigenvalue(idx)
-            np.save(os.path.join(out_dir, "kpoint.npy"), eigstatus[_keys.KPOINT_KEY])
-            np.save(os.path.join(out_dir, "eigenvalue.npy"), eigstatus[_keys.ENERGY_EIGENVALUE_KEY].reshape(-1, eigstatus[_keys.ENERGY_EIGENVALUE_KEY].shape[-1]))
+            np.save(os.path.join(out_dir, "kpoints.npy"), eigstatus[_keys.KPOINT_KEY])
+            np.save(os.path.join(out_dir, "eigenvalues.npy"), eigstatus[_keys.ENERGY_EIGENVALUE_KEY].reshape(-1, eigstatus[_keys.ENERGY_EIGENVALUE_KEY].shape[-1]))
 
         # write blocks
         if any([hamiltonian is not None, overlap is not None, density_matrix is not None]):
@@ -194,21 +194,21 @@ class Parser(ABC):
 
         ham, ovp, dm = self.get_blocks(idx, hamiltonian, overlap, density_matrix)
         if hamiltonian:
-            with h5py.File(os.path.join(out_dir, "hamiltonian.h5"), 'w') as fid:
+            with h5py.File(os.path.join(out_dir, "hamiltonians.h5"), 'w') as fid:
                 for i in range(len(ham)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in ham[i].items():
                         default_group[key_str] = value
         
         if overlap:
-            with h5py.File(os.path.join(out_dir, "overlap.h5"), 'w') as fid:
+            with h5py.File(os.path.join(out_dir, "overlaps.h5"), 'w') as fid:
                 for i in range(len(ovp)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in ovp[i].items():
                         default_group[key_str] = value
         
         if density_matrix:
-            with h5py.File(os.path.join(out_dir, "density_matrix.h5"), 'w') as fid:
+            with h5py.File(os.path.join(out_dir, "density_matrixs.h5"), 'w') as fid:
                 for i in range(len(dm)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in dm[i].items():
