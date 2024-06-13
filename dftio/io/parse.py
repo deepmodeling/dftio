@@ -175,7 +175,7 @@ class Parser(ABC):
         out_dir = os.path.join(outroot, self.formula(idx=idx)+".{}".format(idx))
         os.makedirs(out_dir, exist_ok=True)
         # The abacus must have PBC, so here we save cell by default
-        np.savetxt(os.path.join(out_dir, "cells.dat"), structure[_keys.CELL_KEY].reshape(-1, 3))
+        np.savetxt(os.path.join(out_dir, "cell.dat"), structure[_keys.CELL_KEY].reshape(-1, 3))
         np.savetxt(os.path.join(out_dir, "positions.dat"), structure[_keys.POSITIONS_KEY].reshape(-1, 3))
         np.savetxt(os.path.join(out_dir, "atomic_numbers.dat"), structure[_keys.ATOMIC_NUMBERS_KEY], fmt='%d')
         np.savetxt(os.path.join(out_dir, "pbc.dat"), structure[_keys.PBC_KEY])
