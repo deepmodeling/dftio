@@ -108,7 +108,7 @@ class AbacusParser(Parser):
         basis = {}
         for k,v in orbital_types_dict.items():
             counter = Counter(v)
-            basis[k] = [str(counter[l])+orbitalId[l] for l in range(max(counter.keys())) if counter.get(l, 0) > 0]
+            basis[k] = [str(counter[l])+orbitalId[l] for l in range(max(counter.keys())+1) if counter.get(l, 0) > 0]
             basis[k] = "".join(basis[k])
         
         return basis
@@ -262,7 +262,9 @@ class AbacusParser(Parser):
                         ovp_spinless = {}
                         for k, v in ovp.items():
                             ovp_spinless[k] = v[:v.shape[0] // 2, :v.shape[1] // 2].real
-                    overlap_dict.append(ovp_spinless)
+
+                        ovp_spinless, ovp = ovp, ovp_spinless
+                    overlap_dict.append(ovp)
             
             if density_matrix:
                 density_matrix_dict = []
