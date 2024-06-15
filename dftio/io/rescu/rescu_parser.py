@@ -153,7 +153,7 @@ class RescuParser(Parser):
                 hamil = []
                 hamil_mask = []
                 for i in range(Rvec.shape[0]):
-                    if np.abs(f["LCAO"]["hamiltonian" + str(i+1)][:]).max() > 1e-8:
+                    if np.abs(f["LCAO"]["hamiltonian" + str(i+1)][:]).max() > 1e-6:
                         hamil.append(f["LCAO"]["hamiltonian" + str(i+1)][:].T)
                         hamil_mask.append(True)
                     else:
@@ -170,7 +170,11 @@ class RescuParser(Parser):
                         keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), hamil_Rvec)
                         blocks = self.transform(hamil[:, xcount:xcount+count[si], ycount:ycount+count[sj]], l_dict[si], l_dict[sj])
 
-                        hamiltonian_dict.update(dict(zip(keys, blocks)))
+                        blocks_mask = np.abs(blocks).max(axis=(1,2))>1e-6
+                        if np.any(blocks_mask):
+                            keys = list(keys)
+                            keys = [keys[k] for k,t in enumerate(blocks_mask)if t]
+                            hamiltonian_dict.update(dict(zip(keys, blocks[blocks_mask])))
 
                         ycount += count[sj]
                     xcount += count[si]
@@ -197,6 +201,12 @@ class RescuParser(Parser):
                         keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), ovp_Rvec)
                         blocks = self.transform(ovp[:, xcount:xcount+count[si], ycount:ycount+count[sj]], l_dict[si], l_dict[sj])
                         overlap_dict.update(dict(zip(keys, blocks)))
+
+                        blocks_mask = np.abs(blocks).max(axis=(1,2))>1e-6
+                        if np.any(blocks_mask):
+                            keys = list(keys)
+                            keys = [keys[k] for k,t in enumerate(blocks_mask)if t]
+                            overlap_dict.update(dict(zip(keys, blocks[blocks_mask])))
 
                         ycount += count[sj]
                     xcount += count[si]
