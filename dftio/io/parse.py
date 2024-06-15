@@ -198,21 +198,25 @@ class Parser(ABC):
                 for i in range(len(ham)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in ham[i].items():
-                        default_group[key_str] = value
+                        default_group.create_dataset(key_str, data=value)
+        del ham
         
         if overlap:
             with h5py.File(os.path.join(out_dir, "overlaps.h5"), 'w') as fid:
                 for i in range(len(ovp)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in ovp[i].items():
-                        default_group[key_str] = value
+                        default_group.create_dataset(key_str, data=value)
+        del ovp
         
         if density_matrix:
             with h5py.File(os.path.join(out_dir, "density_matrices.h5"), 'w') as fid:
                 for i in range(len(dm)):
                     default_group = fid.create_group(str(i))
                     for key_str, value in dm[i].items():
-                        default_group[key_str] = value
+                        default_group.create_dataset(key_str, data=value)
+        
+        del dm
 
         return True
     
