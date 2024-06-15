@@ -176,7 +176,7 @@ class SiestaParser(Parser):
             hamil_mask = []
             for i in range(Rvec.shape[0]):
                 off = hamil.geometry.sc_index(Rvec[i]) * hamil.geometry.no
-                if np.abs(hamil_csr[:,off:off+hamil.geometry.no].toarray()).max() > 1e-5:
+                if np.abs(hamil_csr[:,off:off+hamil.geometry.no].toarray()).max() > 1e-8:
                     hamil_mask.append(True)
                     hamil_blocks.append(hamil_csr[:,off:off+hamil.geometry.no].toarray())
                 else:
@@ -199,7 +199,12 @@ class SiestaParser(Parser):
                     block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                             l_dict[si], l_dict[sj])
                     # block = hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
-                    hamiltonian_dict.update(dict(zip(keys, block)))
+                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-8
+
+                    if np.any(block_mask):
+                        keys = list(keys)
+                        keys = [keys[k] for k,t in enumerate(block_mask) if t]
+                        hamiltonian_dict.update(dict(zip(keys, block)))
             
         if overlap:
             if os.path.exists(tshs):
@@ -212,7 +217,7 @@ class SiestaParser(Parser):
             ovp_mask = []
             for i in range(Rvec.shape[0]):
                 off = ovp.geometry.sc_index(Rvec[i]) * ovp.geometry.no
-                if np.abs(ovp_csr[:,off:off+ovp.geometry.no].toarray()).max() > 1e-5:
+                if np.abs(ovp_csr[:,off:off+ovp.geometry.no].toarray()).max() > 1e-8:
                     ovp_mask.append(True)
                     ovp_blocks.append(ovp_csr[:,off:off+ovp.geometry.no].toarray())
                 else:
@@ -235,7 +240,12 @@ class SiestaParser(Parser):
                     block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                              l_dict[si], l_dict[sj])
                     # block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
-                    overlap_dict.update(dict(zip(keys, block)))
+                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-8
+
+                    if np.any(block_mask):
+                        keys = list(keys)
+                        keys = [keys[k] for k,t in enumerate(block_mask) if t]
+                        overlap_dict.update(dict(zip(keys, block)))
 
         if density_matrix:
             _,system_label = self.find_content(path=self.raw_datas[idx],str_to_find='SystemLabel')
@@ -266,7 +276,13 @@ class SiestaParser(Parser):
                     j_orbs_start =site_norbits_cumsum[j] - j_norbs
                     block = self.transform(DM_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                             l_dict[si], l_dict[sj])
-                    density_matrix_dict.update(dict(zip(keys, block)))
+                    
+                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-8
+
+                    if np.any(block_mask):
+                        keys = list(keys)
+                        keys = [keys[k] for k,t in enumerate(block_mask) if t]
+                        density_matrix_dict.update(dict(zip(keys, block)))
 
             
         
