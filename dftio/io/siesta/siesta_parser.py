@@ -173,9 +173,17 @@ class SiestaParser(Parser):
            
             hamil_csr = hamil.tocsr()
             hamil_blocks = []
+            hamil_mask = []
             for i in range(Rvec.shape[0]):
                 off = hamil.geometry.sc_index(Rvec[i]) * hamil.geometry.no
-                hamil_blocks.append(hamil_csr[:,off:off+hamil.geometry.no].toarray())
+                if np.abs(hamil_csr[:,off:off+hamil.geometry.no].toarray()).max() > 1e-8:
+                    hamil_mask.append(True)
+                    hamil_blocks.append(hamil_csr[:,off:off+hamil.geometry.no].toarray())
+                else:
+                    hamil_mask.append(False)
+
+            hamil_mask = np.array(hamil_mask)
+            hamil_Rvec = Rvec[hamil_mask]
             hamil_blocks = np.stack(hamil_blocks).astype(np.float32)
 
             for i in range(na):
@@ -183,7 +191,7 @@ class SiestaParser(Parser):
                 for j in range(na):
                     sj = ase.atom.chemical_symbols[element[j]]
                     keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),\
-                                str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), Rvec)
+                                str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), hamil_Rvec)
                     i_norbs = site_norbits[i]
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
