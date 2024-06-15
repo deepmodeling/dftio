@@ -29,6 +29,7 @@ class SiestaParser(Parser):
         # 用于存储包含SystemLabel标签的文件及其内容
         fdf_files_with_system_label_content = {}
         file_path = None
+        system_label_content = None
         # 遍历给定路径及其子目录
         for root, dirs, files in os.walk(path):
             for file in files:
@@ -45,6 +46,10 @@ class SiestaParser(Parser):
                                 break
                     except:
                         print(f"don't find {str_to_find} in {file_path}")
+        
+        if system_label_content is None:
+            print(f"don't find {str_to_find} in {file_path}, use the default value: siesta")
+
         return file_path, system_label_content   
 
 
@@ -71,6 +76,8 @@ class SiestaParser(Parser):
         # {"Si": "2s2p1d"}
         path = self.raw_datas[idx]
         _,system_label = self.find_content(path=path,str_to_find='SystemLabel')
+        if system_label is None:
+            system_label = "siesta"
 
         # tshs = self.raw_datas[idx]+ "/"+system_label+".TSHS"
         # hamil =  sisl.Hamiltonian.read(tshs)
@@ -116,7 +123,8 @@ class SiestaParser(Parser):
     def get_blocks(self, idx, hamiltonian: bool = False, overlap: bool = False, density_matrix: bool = False):
         path = self.raw_datas[idx]
         _,system_label = self.find_content(path=self.raw_datas[idx],str_to_find='SystemLabel')
-
+        if system_label is None:
+            system_label = "siesta"
         hamiltonian_dict, overlap_dict, density_matrix_dict = None, None, None
         struct,_ = self.find_content(path= path,str_to_find='AtomicCoordinatesAndAtomicSpecies')
         struct = sisl.get_sile(struct).read_geometry()
@@ -215,6 +223,8 @@ class SiestaParser(Parser):
 
         if density_matrix:
             _,system_label = self.find_content(path=self.raw_datas[idx],str_to_find='SystemLabel')
+            if system_label is None:
+                system_label = "siesta"
             DM_path = self.raw_datas[idx]+ "/"+system_label+".DM"
             if os.path.exists(DM_path):
                 DM =  sisl.DensityMatrix.read(DM_path)
