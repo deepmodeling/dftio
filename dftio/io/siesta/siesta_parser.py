@@ -168,6 +168,10 @@ class SiestaParser(Parser):
                 count[at] += n * (2*anglrMId[o]+1)
                 l_dict[at] += [anglrMId[o]] * n
 
+        cut_tol_ham = 1e-5
+        cut_tol_ovp = 1e-5
+        cut_tol_dm = 1e-5
+
 
         if hamiltonian:
            
@@ -176,7 +180,7 @@ class SiestaParser(Parser):
             hamil_mask = []
             for i in range(Rvec.shape[0]):
                 off = hamil.geometry.sc_index(Rvec[i]) * hamil.geometry.no
-                if np.abs(hamil_csr[:,off:off+hamil.geometry.no].toarray()).max() > 1e-5:
+                if np.abs(hamil_csr[:,off:off+hamil.geometry.no].toarray()).max() > cut_tol_ham:
                     hamil_mask.append(True)
                     hamil_blocks.append(hamil_csr[:,off:off+hamil.geometry.no].toarray())
                 else:
@@ -199,7 +203,7 @@ class SiestaParser(Parser):
                     block = self.transform(hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                             l_dict[si], l_dict[sj])
                     # block = hamil_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
-                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-5
+                    block_mask = np.abs(block).max(axis=(1,2)) > cut_tol_ham
 
                     if np.any(block_mask):
                         keys = list(keys)
@@ -217,7 +221,7 @@ class SiestaParser(Parser):
             ovp_mask = []
             for i in range(Rvec.shape[0]):
                 off = ovp.geometry.sc_index(Rvec[i]) * ovp.geometry.no
-                if np.abs(ovp_csr[:,off:off+ovp.geometry.no].toarray()).max() > 1e-5:
+                if np.abs(ovp_csr[:,off:off+ovp.geometry.no].toarray()).max() > cut_tol_ovp:
                     ovp_mask.append(True)
                     ovp_blocks.append(ovp_csr[:,off:off+ovp.geometry.no].toarray())
                 else:
@@ -240,7 +244,7 @@ class SiestaParser(Parser):
                     block = self.transform(ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                              l_dict[si], l_dict[sj])
                     # block = ovp_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs]
-                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-5
+                    block_mask = np.abs(block).max(axis=(1,2)) > cut_tol_ovp
 
                     if np.any(block_mask):
                         keys = list(keys)
@@ -259,17 +263,25 @@ class SiestaParser(Parser):
             
             DM_csr = DM.tocsr()
             DM_blocks = []
+            DM_mask = []
             for i in range(Rvec.shape[0]):
                 off = DM.geometry.sc_index(Rvec[i]) * DM.no
-                DM_blocks.append(DM_csr[:,off:off+DM.no].toarray())
+                if np.abs(DM_csr[:,off:off+DM.geometry.no].toarray()).max() > cut_tol_dm:
+                    DM_mask.append(True)
+                    DM_blocks.append(DM_csr[:,off:off+DM.geometry.no].toarray())
+                else:
+                    DM_mask.append(False)
+                
             DM_blocks = np.stack(DM_blocks).astype(np.float32)
+            DM_mask = np.array(DM_mask)
+            DM_Rvec = Rvec[DM_mask]
 
             for i in range(na):
                 si = ase.atom.chemical_symbols[element[i]]
                 for j in range(na):
                     sj = ase.atom.chemical_symbols[element[j]]
                     keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),\
-                                str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), Rvec)
+                                str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), DM_Rvec)
                     i_norbs = site_norbits[i]
                     i_orbs_start =site_norbits_cumsum[i] - i_norbs
                     j_norbs = site_norbits[j]
@@ -277,7 +289,7 @@ class SiestaParser(Parser):
                     block = self.transform(DM_blocks[:,i_orbs_start:i_orbs_start+i_norbs,j_orbs_start:j_orbs_start+j_norbs],\
                                             l_dict[si], l_dict[sj])
                     
-                    block_mask = np.abs(block).max(axis=(1,2)) > 1e-8
+                    block_mask = np.abs(block).max(axis=(1,2)) > cut_tol_dm
 
                     if np.any(block_mask):
                         keys = list(keys)
