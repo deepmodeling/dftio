@@ -222,37 +222,38 @@ class Parser(ABC):
     
     def write_lmdb(self, idx, outroot, eigenvalue: bool=False, hamiltonian: bool=False, overlap: bool=False, density_matrix: bool=False):
         os.makedirs(outroot, exist_ok=True)
-        out_dir = os.path.join(outroot, "data.lmdb")
-        lmdb_env = lmdb.open(os.path.join(out_dir), map_size=1048576000000)
+        out_dir = os.path.join(outroot, "data.{}.lmdb".format(os.getpid()))
         structure = self.get_structure(idx)
+        if any([hamiltonian, overlap, density_matrix]):
+            ham, ovp, dm = self.get_blocks(idx, hamiltonian, overlap, density_matrix)
+        if eigenvalue:
+            eigstatus = self.get_eigenvalue(idx)
 
-        with lmdb_env.begin(write=True) as txn:
-            if any([hamiltonian, overlap, density_matrix]):
-                ham, ovp, dm = self.get_blocks(idx, hamiltonian, overlap, density_matrix)
+        n_frames = structure[_keys.POSITIONS_KEY].shape[0]
+        lmdb_env = lmdb.open(os.path.join(out_dir), map_size=1048576000000, lock=True)
+        for nf in range(n_frames):
+            data_dict = {}
+            data_dict[_keys.ATOMIC_NUMBERS_KEY] = structure[_keys.ATOMIC_NUMBERS_KEY]
+            data_dict[_keys.CELL_KEY] = structure[_keys.CELL_KEY][nf]
+            data_dict[_keys.POSITIONS_KEY] = structure[_keys.POSITIONS_KEY][nf]
+            data_dict[_keys.PBC_KEY] = structure[_keys.PBC_KEY]
+
             if eigenvalue:
-                eigstatus = self.get_eigenvalue(idx)
+                data_dict[_keys.ENERGY_EIGENVALUE_KEY] = eigstatus[_keys.ENERGY_EIGENVALUE_KEY][nf]
+                data_dict[_keys.KPOINT_KEY] = eigstatus[_keys.KPOINT_KEY]
 
-            n_frames = structure[_keys.POSITIONS_KEY].shape[0]
-            for nf in range(n_frames):
-                data_dict = {}
-                data_dict[_keys.ATOMIC_NUMBERS_KEY] = structure[_keys.ATOMIC_NUMBERS_KEY]
-                data_dict[_keys.CELL_KEY] = structure[_keys.CELL_KEY][nf]
-                data_dict[_keys.POSITIONS_KEY] = structure[_keys.POSITIONS_KEY][nf]
-                data_dict[_keys.PBC_KEY] = structure[_keys.PBC_KEY]
+            if hamiltonian:
+                data_dict["hamiltonian"] = ham[nf]
+            if overlap:
+                data_dict["overlap"] = ovp[nf]
+            if density_matrix:
+                data_dict["density_matrix"] = dm[nf]
 
-                if eigenvalue:
-                    data_dict[_keys.ENERGY_EIGENVALUE_KEY] = eigstatus[_keys.ENERGY_EIGENVALUE_KEY][nf]
-                    data_dict[_keys.KPOINT_KEY] = eigstatus[_keys.KPOINT_KEY]
+            
+            data_dict = pickle.dumps(data_dict)
 
-                if hamiltonian:
-                    data_dict["hamiltonian"] = ham[nf]
-                if overlap:
-                    data_dict["overlap"] = ovp[nf]
-                if density_matrix:
-                    data_dict["density_matrix"] = dm[nf]
-
-                
-                data_dict = pickle.dumps(data_dict)
+            # write
+            with lmdb_env.begin(write=True) as txn:
                 entries = lmdb_env.stat()["entries"]
                 txn.put(entries.to_bytes(length=4, byteorder='big'), data_dict)
 

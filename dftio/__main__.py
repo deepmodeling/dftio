@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from dftio import __version__
 from .io.parse import ParserRegister
 from tqdm import tqdm
+from multiprocessing.pool import Pool
 from .logger import set_log_handles
 
 def get_ll(log_level: str) -> int:
@@ -76,6 +77,14 @@ def main_parser() -> argparse.ArgumentParser:
         type=str,
         default="abacus",
         help="The name of the DFT software.",
+    )
+
+    parser_parse.add_argument(
+        "-n",
+        "--num_workers",
+        type=int,
+        default=1,
+        help="The number of workers used to parse the dataset. (For n>1, we use the multiprocessing to accelerate io.)",
     )
 
     parser_parse.add_argument(
@@ -162,6 +171,18 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
 
     return parsed_args
 
+class wapper:
+    def __init__(self, args):
+        self.args = args
+        self.parser = ParserRegister(
+            **self.args
+        )
+        
+    def __call__(self, idx):
+        # print(idx)
+        self.parser.write(idx=idx, **self.args)
+        return True
+
 def main():
     args = parse_args()
 
@@ -172,11 +193,19 @@ def main():
 
     if args.command == "parse":
         parser = ParserRegister(
-            **dict_args
-        )
+                        **dict_args
+                    )
+        
+        if args.num_workers > 1:
 
-        for i in tqdm(range(len(parser)), desc="Parsing the DFT files: "):
-            parser.write(idx=i, **dict_args)
+            with Pool(args.num_workers) as p:
+                list(tqdm(p.imap(wapper(dict_args), range(len(parser))), total=len(parser), desc="Parsing the DFT files: "))
+        else:
+            parser = ParserRegister(
+                **dict_args
+            )
+            for i in tqdm(range(len(parser)), desc="Parsing the DFT files: "):
+                parser.write(idx=i, **dict_args)
         
 
 
