@@ -57,7 +57,7 @@ class AbacusParser(Parser):
             with open(os.path.join(path, "OUT.ABACUS", "kpoints"), "r") as f:
                 line = find_target_line(f, "nkstot now")
                 nkstot = line.strip().split()[-1]
-                line = find_target_line(f, " KPOINTS     DIRECT_X")
+                line = find_target_line(f, " KPOINTS ")
                 for _ in range(int(nkstot)):
                     line = f.readline()
                     kpt = []
@@ -120,6 +120,8 @@ class AbacusParser(Parser):
         hamiltonian_dict, overlap_dict, density_matrix_dict = None, None, None
         sys = self.raw_sys[idx]
         nsites = sys.data["atom_types"].shape[0]
+        if os.path.exists(os.path.join(self.raw_datas[idx], "OUT.ABACUS", "hscsr.tgz")):
+            os.system(f"tar -xzf {os.path.join(self.raw_datas[idx], 'OUT.ABACUS', 'hscsr.tgz')} -C {os.path.join(self.raw_datas[idx])}")
         with open(os.path.join(self.raw_datas[idx], "OUT.ABACUS", logfile), 'r') as f:
             site_norbits_dict = {}
             orbital_types_dict = {}
