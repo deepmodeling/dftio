@@ -4,5 +4,6 @@ from .rescu.rescu_parser import RescuParser
 
 __all__ = [
     "AbacusParser",
-    "RescuParser"
+    "RescuParser",
+    "GaussianParser"
 ]
