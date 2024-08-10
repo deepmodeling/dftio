@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ase import Atoms, Atom
 from ase.visualize import view
+from pprint import pprint
+from .gaussian_conventionns import orbital_idx_map
 
 
 def get_nbasis(file_path):
@@ -264,4 +266,91 @@ def read_int1e_from_gau_log(logname, matrix_type, nbf):
     mat = mat + mat.T - np.diag(mat.diagonal())
     return mat
 
+
+def get_atoms(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    in_standard_orientation = False
+    atoms = Atoms()
+
+    for idx, line in enumerate(lines):
+        # Extract atomic coordinates in standard orientation
+        if "Standard orientation:" in line:
+            in_standard_orientation = True
+            atom_data = []  # Reset atom data for the latest standard orientation
+        elif in_standard_orientation and "---" in line:
+            if len(atoms) > 0:
+                break
+        elif in_standard_orientation:
+            parts = line.split()
+            if len(parts) == 6:  # We expect 6 parts in a valid atom data line
+                try:
+                    atomic_number = int(parts[1])
+                    x = float(parts[3])
+                    y = float(parts[4])
+                    z = float(parts[5])
+                    atoms.append(Atom(symbol=atomic_number, position=(x, y, z)))
+                except ValueError:
+                    continue
+    return atoms
+
+
+def get_convention(filename):
+    nbasis = get_nbasis(filename)
+    basis_name = find_basis_set(filename)
+    orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_sorted_orbitals, atom_to_transform_indices = parse_orbital_populations(
+        filename, nbasis, orbital_idx_map)
+    convention = {
+        'atom_to_simplified_orbitals': atom_to_simplified_orbitals,
+        'atom_to_sorted_orbitals': atom_to_sorted_orbitals,
+        'atom_to_transform_indices': atom_to_transform_indices,
+        'basis_name': basis_name,
+    }
+    pprint(convention, compact=True)
+    return convention
+
+
+def check_eigenvalue_consistency(matrix, manipulated_matrix):
+    original_eigenvalues = np.linalg.eigvals(matrix)
+    manipulated_eigenvalues = np.linalg.eigvals(manipulated_matrix)
+    original_eigenvalues.sort()
+    manipulated_eigenvalues.sort()
+    tolerance = 1e-10
+    is_consistent = np.allclose(original_eigenvalues, manipulated_eigenvalues, atol=tolerance)
+    return is_consistent
+
+
+def check_transform(filepath):
+    convention = get_convention(filename='gau.log')
+    nbasis = get_nbasis(filepath)
+    atoms = get_atoms(filepath)
+    molecule_transform_indices = generate_molecule_transform_indices(atom_types=atoms.symbols,
+                                                                     atom_to_transform_indices=convention[
+                                                                         'atom_to_transform_indices'])
+    hamiltonian_matrix = read_int1e_from_gau_log(filepath, matrix_type=3, nbf=nbasis)
+    new_hamiltonian_matrix = hamiltonian_matrix[..., molecule_transform_indices, :]
+    new_hamiltonian_matrix = new_hamiltonian_matrix[..., :, molecule_transform_indices]
+    consistent_flag = check_eigenvalue_consistency(hamiltonian_matrix, new_hamiltonian_matrix)
+    if consistent_flag:
+        print('Hamiltonian matrix transform is consistent for eigenvalues.')
+    else:
+        print('Hamiltonian matrix transform is non-consistent for eigenvalues.')
+
+    overlap_matrix = read_int1e_from_gau_log(filepath, matrix_type=0, nbf=nbasis)
+    new_overlap_matrix = overlap_matrix[..., molecule_transform_indices, :]
+    new_overlap_matrix = new_overlap_matrix[..., :, molecule_transform_indices]
+    consistent_flag = check_eigenvalue_consistency(overlap_matrix, new_overlap_matrix)
+    if consistent_flag:
+        print('Overlap matrix transform is consistent for eigenvalues.')
+    else:
+        print('Overlap matrix transform is non-consistent for eigenvalues.')
+
+    density_matrix = read_density_from_gau_log(filepath, nbf=nbasis)
+    new_density_matrix = density_matrix[..., molecule_transform_indices, :]
+    new_density_matrix = new_density_matrix[..., :, molecule_transform_indices]
+    consistent_flag = check_eigenvalue_consistency(density_matrix, new_density_matrix)
+    if consistent_flag:
+        print('Density matrix transform is consistent for eigenvalues.')
+    else:
+        print('Density matrix transform is non-consistent for eigenvalues.')
 
