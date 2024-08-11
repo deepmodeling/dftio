@@ -2,7 +2,7 @@ import re
 from collections import Counter
 import os
 import shutil
-
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,6 +26,41 @@ def get_nbasis(file_path):
     else:
         print(f"NBasis = {nbasis}")
     return nbasis
+
+
+def get_basic_info(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+    in_standard_orientation = False
+    atoms = Atoms()
+    for idx, line in enumerate(lines):
+        # Extract atomic coordinates in standard orientation
+        if "Standard orientation:" in line:
+            in_standard_orientation = True
+            atom_data = []  # Reset atom data for the latest standard orientation
+        elif in_standard_orientation and "---" in line:
+            if len(atoms) > 0:
+                break
+        elif in_standard_orientation:
+            parts = line.split()
+            if len(parts) == 6:  # We expect 6 parts in a valid atom data line
+                try:
+                    atomic_number = int(parts[1])
+                    x = float(parts[3])
+                    y = float(parts[4])
+                    z = float(parts[5])
+                    atoms.append(Atom(symbol=atomic_number, position=(x, y, z)))
+                except ValueError:
+                    continue
+    nbasis = None
+    for line in lines[idx:]:
+        # Extract NBasis
+        if line.strip().startswith("NBasis"):
+            nbasis = int(line.split()[2])
+            break
+    if nbasis is None:
+        raise RuntimeError("NBasis keyword not found in the log file.")
+    return nbasis, atoms
 
 
 def find_basis_set(file_path):
@@ -297,8 +332,8 @@ def get_atoms(file_path):
                     continue
     return atoms
 
-
-def get_convention(filename):
+# Key word Pop=Full is required
+def get_convention(filename, dump_file=None):
     nbasis = get_nbasis(filename)
     basis_name = find_basis_set(filename)
     orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_sorted_orbitals, atom_to_transform_indices = parse_orbital_populations(
@@ -310,6 +345,9 @@ def get_convention(filename):
         'basis_name': basis_name,
     }
     pprint(convention, compact=True)
+    if dump_file:
+        with open(dump_file, 'w') as f:
+            json.dump(convention, f, indent=4)
     return convention
 
 

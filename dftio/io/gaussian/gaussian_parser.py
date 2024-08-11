@@ -1,4 +1,5 @@
 import re
+import json
 from collections import Counter
 
 import matplotlib.pyplot as plt
@@ -11,37 +12,56 @@ from ..parse import Parser, ParserRegister
 from .gaussian_tools import *
 from .gaussian_conventionns import *
 
+
 @ParserRegister.register("gaussian")
 class GaussianParser(Parser):
-    def __init__(self):
-        pass
+    def __init__(self, root, prefix, convention_file, **kwargs):
+        super(GaussianParser, self).__init__(root, prefix)
+        with open(convention_file, 'r') as f:
+            self.convention = json.load(f)
+        self.atomic_symbols = {}
+        self.nbasis = {}
 
-    def get_structure(self, file_path):
-        return get_atoms(file_path)
+    def get_structure(self, idx):
+        file_path = self.raw_datas[idx]
+        nbasis, atoms = get_basic_info(file_path)
+        self.atomic_symbols[idx] = atoms.symbols
+        self.nbasis[idx] = nbasis
+        structure = {
+            _keys.ATOMIC_NUMBERS_KEY: atoms.numbers,
+            _keys.PBC_KEY: np.array([False, False, False]),
+            _keys.POSITIONS_KEY: atoms.positions.reshape(1, -1, 3).astype(np.float32),
+            _keys.CELL_KEY: atoms.cell.reshape(1,3,3).astype(np.float32)
+        }
+        return structure
 
     def get_eigenvalue(self):
         psas
 
-    # Key word Pop=Full is required
-    def get_basis(self):
-        pass
+    def get_basis(self, idx):
+        return self.convention['atom_to_sorted_orbitals']
 
-    def get_blocks(self, logname, hamiltonian=True, overlap=False, density=False, convention=gau_6311_plus_gdp_convention):
-        nbasis = get_nbasis(logname)
-        atoms = self.get_structure(logname)
-        molecule_transform_indices = generate_molecule_transform_indices(atom_types=atoms.symbols,
-                                            atom_to_transform_indices=convention['atom_to_transform_indices'])
+    def get_blocks(self, idx, hamiltonian=True, overlap=False, density=False):
+        file_path = self.raw_datas[idx]
+        if idx not in self.nbasis.keys():
+            nbasis, atoms = get_basic_info(file_path)
+            atomic_symbols = atoms.symbols
+        else:
+            nbasis = self.nbasis[idx]
+            atomic_symbols = self.atomic_symbols[idx]
+        molecule_transform_indices = generate_molecule_transform_indices(atom_types=atomic_symbols,
+                                            atom_to_transform_indices=self.convention['atom_to_transform_indices'])
         hamiltonian_matrix, overlap_matrix, density_matrix = None, None, None
         if hamiltonian:
-            hamiltonian_matrix = read_int1e_from_gau_log(logname, matrix_type=3, nbf=nbasis)
+            hamiltonian_matrix = read_int1e_from_gau_log(file_path, matrix_type=3, nbf=nbasis)
             hamiltonian_matrix = hamiltonian_matrix[..., molecule_transform_indices, :]
             hamiltonian_matrix = hamiltonian_matrix[..., :, molecule_transform_indices]
         if overlap:
-            overlap_matrix = read_int1e_from_gau_log(logname, matrix_type=0, nbf=nbasis)
+            overlap_matrix = read_int1e_from_gau_log(file_path, matrix_type=0, nbf=nbasis)
             overlap_matrix = overlap_matrix[..., molecule_transform_indices, :]
             overlap_matrix = overlap_matrix[..., :, molecule_transform_indices]
         if density:
-            density_matrix = read_density_from_gau_log(logname, nbf=nbasis)
+            density_matrix = read_density_from_gau_log(file_path, nbf=nbasis)
             density_matrix = density_matrix[..., molecule_transform_indices, :]
             density_matrix = density_matrix[..., :, molecule_transform_indices]
         return hamiltonian_matrix, overlap_matrix, density_matrix
