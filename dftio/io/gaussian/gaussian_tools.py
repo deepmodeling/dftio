@@ -1,5 +1,8 @@
 import re
 from collections import Counter
+import os
+import shutil
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -354,3 +357,18 @@ def check_transform(filepath):
     else:
         print('Density matrix transform is non-consistent for eigenvalues.')
 
+
+# traverse root folder to find log files that named with logname
+# copy them out to the dst folder and name them with their parent folder name
+def traverse_cp_log(root_folder, logname, dst_folder):
+    root_folder = os.path.abspath(root_folder)
+    dst_folder = os.path.abspath(dst_folder)
+    common_path = os.path.commonpath([root_folder, dst_folder])
+    assert common_path != root_folder, f"Error: {dst_folder} is a subfolder of {root_folder}"
+    os.makedirs(dst_folder, exist_ok=True)
+    for subdir, dirs, files in os.walk(root_folder):
+        for file in files:
+            if file == logname:
+                folder_name = os.path.basename(subdir)
+                shutil.copy(src=os.path.join(subdir, file),
+                            dst=os.path.join(dst_folder, folder_name+'.log'))
