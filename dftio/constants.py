@@ -1,4 +1,7 @@
 import numpy as np
+import ase.data as data
+
+atomic_numbers_r = dict(zip(data.atomic_numbers.values(), data.atomic_numbers.keys()))
 
 orbitalId = {0:'s',1:'p',2:'d',3:'f',4:'g',5:'h'}
 anglrMId = {'s':0,'p':1,'d':2,'f':3,'g':4,'h':5}

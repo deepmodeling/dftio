@@ -130,18 +130,61 @@ class RescuParser(Parser):
         else:
             return [{}], [{}], [{}]
         
-        l_dict = {}
         # count norbs
         count = {}
         for at in basis:
             count[at] = 0
-            l_dict[at] = []
             for iorb in range(int(len(basis[at]) / 2)):
                 n, o = int(basis[at][2*iorb]), basis[at][2*iorb+1]
                 count[at] += n * (2*anglrMId[o]+1)
-                l_dict[at] += [anglrMId[o]] * n
         
-        an = self.get_structure(idx=idx)[_keys.ATOMIC_NUMBERS_KEY]
+        stru = self.get_structure(idx=idx)
+        an = stru[_keys.ATOMIC_NUMBERS_KEY]
+
+        # get l_dict, for transform of orbital order
+        global_lists2 = glob.glob(self[idx] + "/*.mat")
+        for fs in global_lists2:
+            calT = self.calculation_type(fs)
+            if calT == "self-consistent":
+                path2 = fs
+                break
+
+        with h5py.File(path2, "r") as f:
+            Aorb = f["LCAO"]["orbInfo"]["Aorb"][:].flatten().astype(np.int32)
+            Lorb = f["LCAO"]["orbInfo"]["Lorb"][:].flatten().astype(np.int32)
+        
+        an_ = list(set(an))
+        an_ind_ = [an.tolist().index(i)+1 for i in an_]# since Aorb info start from 1
+        origin_basis = {}
+        for i, at in enumerate(an_ind_):
+            ix = np.where(Aorb == at)[0]
+            origin_basis[ase.atom.chemical_symbols[an_[i]]] = Lorb[ix]
+        
+        l_dict = {}
+        for k in origin_basis:
+            l_dict[k] = []
+            bb = origin_basis[k]
+            iv = 0
+            while iv < len(bb):
+                l = bb[iv]
+                iv += 2*l+1
+                l_dict[k] += [l]
+
+        rot_mat = {}
+        for k in l_dict:
+            l_sort = sorted(range(len(l_dict[k])), key=lambda x: l_dict[k][x]) # here the order of l is from small to large, and should follow the sorted convention if l is the same
+            rot_index = []
+            for i, iv in enumerate(l_sort):
+                start = int(2*sum(l_dict[k][:iv]) + iv)
+                end = int(start + 2*l_dict[k][iv] + 1)
+                rot_index += list(range(start, end))
+            rot_mat[k] = np.eye(len(rot_index))[rot_index]
+        
+        for i, mat in enumerate(rot_mat.values()):
+            import matplotlib.pyplot as plt
+
+            plt.matshow(mat)
+            plt.savefig("/personal/DFT/HAl100/rot_mat{}.png".format(i))
 
         hamiltonian_dict = {}
         overlap_dict = {}
@@ -153,7 +196,7 @@ class RescuParser(Parser):
                 hamil = []
                 hamil_mask = []
                 for i in range(Rvec.shape[0]):
-                    if np.abs(f["LCAO"]["hamiltonian" + str(i+1)][:]).max() > 1e-6:
+                    if np.abs(f["LCAO"]["hamiltonian" + str(i+1)][:]).max() > 1e-8:
                         hamil.append(f["LCAO"]["hamiltonian" + str(i+1)][:].T)
                         hamil_mask.append(True)
                     else:
@@ -170,16 +213,15 @@ class RescuParser(Parser):
                         keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), hamil_Rvec)
                         blocks = self.transform(hamil[:, xcount:xcount+count[si], ycount:ycount+count[sj]], l_dict[si], l_dict[sj])
 
-                        blocks_mask = np.abs(blocks).max(axis=(1,2))>1e-6
+                        blocks_mask = np.abs(blocks).max(axis=(1,2))>1e-8
                         if np.any(blocks_mask):
                             keys = list(keys)
-                            keys = [keys[k] for k,t in enumerate(blocks_mask)if t]
-                            hamiltonian_dict.update(dict(zip(keys, blocks[blocks_mask])))
+                            keys = [keys[k] for k,t in enumerate(blocks_mask) if t]
+                            hamiltonian_dict.update(dict(zip(keys, rot_mat[si] @ blocks[blocks_mask] @ rot_mat[sj].T)))
 
                         ycount += count[sj]
                     xcount += count[si]
             
-
             if overlap:
                 ovp = []
                 ovp_mask = []
@@ -200,13 +242,11 @@ class RescuParser(Parser):
                         sj = ase.atom.chemical_symbols[aj]
                         keys = map(lambda x: "_".join([str(i),str(j),str(x[0].astype(np.int32)),str(x[1].astype(np.int32)),str(x[2].astype(np.int32))]), ovp_Rvec)
                         blocks = self.transform(ovp[:, xcount:xcount+count[si], ycount:ycount+count[sj]], l_dict[si], l_dict[sj])
-                        overlap_dict.update(dict(zip(keys, blocks)))
-
-                        blocks_mask = np.abs(blocks).max(axis=(1,2))>1e-6
+                        blocks_mask = np.abs(blocks).max(axis=(1,2)) > 1e-8
                         if np.any(blocks_mask):
                             keys = list(keys)
-                            keys = [keys[k] for k,t in enumerate(blocks_mask)if t]
-                            overlap_dict.update(dict(zip(keys, blocks[blocks_mask])))
+                            keys = [keys[k] for k,t in enumerate(blocks_mask) if t]
+                            overlap_dict.update(dict(zip(keys, rot_mat[si] @ blocks[blocks_mask] @ rot_mat[sj].T)))
 
                         ycount += count[sj]
                     xcount += count[si]
@@ -220,6 +260,7 @@ class RescuParser(Parser):
 
         if max(*l_lefts, *l_rights) > 5:
             raise NotImplementedError("Only support l = s, p, d, f, g, h.")
+
         block_lefts = block_diag(*[RESCU2DFTIO[l_left] for l_left in l_lefts])
         block_rights = block_diag(*[RESCU2DFTIO[l_right] for l_right in l_rights])
 
