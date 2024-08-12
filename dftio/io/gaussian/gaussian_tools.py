@@ -351,7 +351,7 @@ def check_transform(filepath):
     convention = get_convention(filename='gau.log')
     nbasis = get_nbasis(filepath)
     atoms = get_atoms(filepath)
-    molecule_transform_indices = generate_molecule_transform_indices(atom_types=atoms.symbols,
+    molecule_transform_indices, _ = generate_molecule_transform_indices(atom_types=atoms.symbols,
                                                                      atom_to_transform_indices=convention[
                                                                          'atom_to_transform_indices'])
     hamiltonian_matrix = read_int1e_from_gau_log(filepath, matrix_type=3, nbf=nbasis)
