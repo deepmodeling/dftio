@@ -23,8 +23,6 @@ def get_nbasis(file_path):
             break
     if nbasis is None:
         print("NBasis keyword not found in the log file.")
-    else:
-        print(f"NBasis = {nbasis}")
     return nbasis
 
 
@@ -99,9 +97,10 @@ def process_atomic_orbitals(orbital_list, orbital_idx_map):
 
     transform_indices = []
     orbital_counts = Counter()
-
+    sorted_orbital_str = ''
+    division_list = [1, 3, 5, 7]
     # Process each orbital type in order: s, p, d, f
-    for orbital_type in ['s', 'p', 'd', 'f']:
+    for idx, orbital_type in enumerate(['s', 'p', 'd', 'f']):
         # Sort orbitals of this type by principal quantum number
         sorted_orbitals = sorted(orbitals_by_type[orbital_type], key=lambda x: int(x[1][0]))
 
@@ -115,20 +114,12 @@ def process_atomic_orbitals(orbital_list, orbital_idx_map):
                 for shift in shifts:
                     if i + shift < len(sorted_orbitals):
                         transform_indices.append(sorted_orbitals[i + shift][0])
-
         # Count the orbitals
         orbital_counts[orbital_type] = len(sorted_orbitals)
-
-    # Simplify and check orbital counts
-    s_sets = orbital_counts['s']
-    assert abs(orbital_counts['p'] % 3) < 1e-6, "p orbital is not multiple of 3"
-    p_sets = orbital_counts['p'] // 3
-    assert abs(orbital_counts['d'] % 5) < 1e-6, "d orbital is not multiple of 5"
-    d_sets = orbital_counts['d'] // 5
-    assert abs(orbital_counts['f'] % 7) < 1e-6, "f orbital is not multiple of 7"
-    f_sets = orbital_counts['f'] // 7
-
-    sorted_orbital_str = s_sets * 's' + p_sets * 'p' + d_sets * 'd' + f_sets * 'f'
+        if orbital_counts[orbital_type] > 0:
+            a_division = division_list[idx]
+            assert abs(orbital_counts[orbital_type] % a_division) < 1e-6, f"{orbital_type} orbital is not multiple of {a_division}"
+            sorted_orbital_str = sorted_orbital_str + str(orbital_counts[orbital_type] // a_division) + orbital_type
 
     return transform_indices, sorted_orbital_str
 
@@ -156,7 +147,7 @@ def parse_orbital_populations(filename, nbf, orbital_idx_map):
             orbitals.append(an_orbital)
         atom_to_orbitals = {}
         atom_to_simplified_orbitals = {}
-        atom_to_sorted_orbitals = {}
+        atom_to_dftio_orbitals = {}
         atom_to_transform_indices = {}
         orbital_index = 1
         for atom in atoms_list:
@@ -171,31 +162,26 @@ def parse_orbital_populations(filename, nbf, orbital_idx_map):
             if not atom in atom_to_orbitals.keys():
                 atom_to_orbitals[atom] = unit_orbitals
                 transform_indices, sorted_orbital_str = process_atomic_orbitals(unit_orbitals, orbital_idx_map)
-                atom_to_sorted_orbitals[atom] = sorted_orbital_str
+                atom_to_dftio_orbitals[atom] = sorted_orbital_str
                 atom_to_transform_indices[atom] = transform_indices
                 atom_to_simplified_orbitals[atom] = simplify_orbitals(unit_orbitals)
-    return orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_sorted_orbitals, atom_to_transform_indices
+    return orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_dftio_orbitals, atom_to_transform_indices
 
 
 
 def generate_molecule_transform_indices(atom_types, atom_to_transform_indices):
     molecule_transform_indices = []
+    atom_in_mo_indices = []
     current_offset = 0
 
-    for atom_type in atom_types:
-        # Get the transform indices for this atom type
+    for atomic_idx, atom_type in enumerate(atom_types):
         atom_indices = atom_to_transform_indices[atom_type]
-
-        # Add the current offset to each index
         adjusted_indices = [index + current_offset for index in atom_indices]
-
-        # Add these adjusted indices to the molecule transform indices
         molecule_transform_indices.extend(adjusted_indices)
-
-        # Update the offset for the next atom
+        atom_in_mo_indices.extend([atomic_idx]*len(atom_indices))
         current_offset += max(atom_indices) + 1
 
-    return molecule_transform_indices
+    return molecule_transform_indices, atom_in_mo_indices
 
 
 def matrix_to_image(matrix, filename='matrix_image.png'):
@@ -336,16 +322,16 @@ def get_atoms(file_path):
 def get_convention(filename, dump_file=None):
     nbasis = get_nbasis(filename)
     basis_name = find_basis_set(filename)
-    orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_sorted_orbitals, atom_to_transform_indices = parse_orbital_populations(
+    orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_dftio_orbitals, atom_to_transform_indices = parse_orbital_populations(
         filename, nbasis, orbital_idx_map)
     convention = {
         'atom_to_simplified_orbitals': atom_to_simplified_orbitals,
-        'atom_to_sorted_orbitals': atom_to_sorted_orbitals,
+        'atom_to_dftio_orbitals': atom_to_dftio_orbitals,
         'atom_to_transform_indices': atom_to_transform_indices,
         'basis_name': basis_name,
     }
-    pprint(convention, compact=True)
     if dump_file:
+        pprint(convention, compact=True)
         with open(dump_file, 'w') as f:
             json.dump(convention, f, indent=4)
     return convention
