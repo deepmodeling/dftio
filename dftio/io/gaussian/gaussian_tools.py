@@ -1,15 +1,94 @@
-import re
-from collections import Counter
-import os
-import shutil
+import glob
 import json
+import os
+import re
+import shutil
+from collections import Counter
+from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
 from ase import Atoms, Atom
-from ase.visualize import view
-from pprint import pprint
+
 from .gaussian_conventionns import orbital_idx_map
+
+
+def chk_valid_gau_log_unit(file_path, hamiltonian=False, overlap=False, density_matrix=False,
+                           is_fixed_convention=False):
+    required_patterns = [
+        r"Standard orientation:",
+        r"NBasis=",
+        r'Normal termination of Gaussian'
+    ]
+
+    if hamiltonian:
+        required_patterns.append(r"\*+\s*Core Hamiltonian\s*\*+")
+    if overlap:
+        required_patterns.append(r"\*+\s*Overlap\s*\*+")
+    if density_matrix:
+        required_patterns.append(r"\s*Density Matrix:")
+
+    if not is_fixed_convention:
+        required_patterns.extend([
+            r"Standard basis:",
+            r"\s*Gross orbital populations:"
+        ])
+
+    patterns = [re.compile(pattern) for pattern in required_patterns]
+    found_patterns = [False] * len(patterns)
+
+    with open(file_path, 'r') as file:
+        for line in file:
+            for i, pattern in enumerate(patterns):
+                if not found_patterns[i] and pattern.search(line):
+                    found_patterns[i] = True
+    if all(found_patterns):
+        return True
+    else:
+        return False
+
+
+def chk_valid_gau_logs(root, prefix, hamiltonian=False, overlap=False, density_matrix=False, is_fixed_convention=False,
+                       valid_gau_info_path=r'./valid_gaussian_logs.txt',
+                       invalid_gau_info_path=r'./invalid_gau_info_path.txt'):
+    file_paths = glob.glob(root + '/*' + prefix + '*')
+    valid_count = 0
+    invalid_count = 0
+    with open(valid_gau_info_path, 'w') as valid_file, open(invalid_gau_info_path, 'w') as invalid_file:
+        for a_file in file_paths:
+            if chk_valid_gau_log_unit(a_file, hamiltonian, overlap, density_matrix, is_fixed_convention):
+                valid_file.write(f"{a_file}\n")
+                valid_count += 1
+            else:
+                invalid_file.write(f"{a_file}\n")
+                invalid_count += 1
+    print(f"Valid Gaussian log files: {valid_count}")
+    print(f"Invalid Gaussian log files: {invalid_count}")
+    print(f"Valid file paths written to: {valid_gau_info_path}")
+    print(f"Invalid file paths written to: {invalid_gau_info_path}")
+
+
+def transform_matrix(matrix, transform_indices):
+    matrix = matrix[..., transform_indices, :]
+    matrix = matrix[..., :, transform_indices]
+    return matrix
+
+
+def cut_matrix(full_matrix, atom_in_mo_indices, threshold=1e-8):
+    partitioned_blocks = {}
+    atom_indeces = sorted(set(atom_in_mo_indices))
+    atom_positions = {atom: [i for i, x in enumerate(atom_in_mo_indices) if x == atom] for atom in atom_indeces}
+
+    # Extract blocks for each pair of atoms
+    for ii, i in enumerate(atom_indeces):
+        for j in atom_indeces[ii:]:
+            key = f"{i}_{j}_0_0_0"
+            rows = atom_positions[i]
+            cols = atom_positions[j]
+            block = full_matrix[np.ix_(rows, cols)]
+            if np.max(np.abs(block)) > threshold:
+                partitioned_blocks[key] = block
+    return partitioned_blocks
 
 
 def get_nbasis(file_path):
@@ -168,7 +247,6 @@ def parse_orbital_populations(filename, nbf, orbital_idx_map):
     return orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_dftio_orbitals, atom_to_transform_indices
 
 
-
 def generate_molecule_transform_indices(atom_types, atom_to_transform_indices):
     molecule_transform_indices = []
     atom_in_mo_indices = []
@@ -178,7 +256,7 @@ def generate_molecule_transform_indices(atom_types, atom_to_transform_indices):
         atom_indices = atom_to_transform_indices[atom_type]
         adjusted_indices = [index + current_offset for index in atom_indices]
         molecule_transform_indices.extend(adjusted_indices)
-        atom_in_mo_indices.extend([atomic_idx]*len(atom_indices))
+        atom_in_mo_indices.extend([atomic_idx] * len(atom_indices))
         current_offset += max(atom_indices) + 1
 
     return molecule_transform_indices, atom_in_mo_indices
@@ -318,6 +396,7 @@ def get_atoms(file_path):
                     continue
     return atoms
 
+
 # Key word Pop=Full is required
 def get_convention(filename, dump_file=None):
     nbasis = get_nbasis(filename)
@@ -349,14 +428,12 @@ def check_eigenvalue_consistency(matrix, manipulated_matrix):
 
 def check_transform(filepath):
     convention = get_convention(filename='gau.log')
-    nbasis = get_nbasis(filepath)
-    atoms = get_atoms(filepath)
+    nbasis, atoms = get_basic_info(filepath)
     molecule_transform_indices, _ = generate_molecule_transform_indices(atom_types=atoms.symbols,
-                                                                     atom_to_transform_indices=convention[
-                                                                         'atom_to_transform_indices'])
+                                                                        atom_to_transform_indices=convention[
+                                                                            'atom_to_transform_indices'])
     hamiltonian_matrix = read_int1e_from_gau_log(filepath, matrix_type=3, nbf=nbasis)
-    new_hamiltonian_matrix = hamiltonian_matrix[..., molecule_transform_indices, :]
-    new_hamiltonian_matrix = new_hamiltonian_matrix[..., :, molecule_transform_indices]
+    new_hamiltonian_matrix = transform_matrix(hamiltonian_matrix, molecule_transform_indices)
     consistent_flag = check_eigenvalue_consistency(hamiltonian_matrix, new_hamiltonian_matrix)
     if consistent_flag:
         print('Hamiltonian matrix transform is consistent for eigenvalues.')
@@ -364,8 +441,7 @@ def check_transform(filepath):
         print('Hamiltonian matrix transform is non-consistent for eigenvalues.')
 
     overlap_matrix = read_int1e_from_gau_log(filepath, matrix_type=0, nbf=nbasis)
-    new_overlap_matrix = overlap_matrix[..., molecule_transform_indices, :]
-    new_overlap_matrix = new_overlap_matrix[..., :, molecule_transform_indices]
+    new_overlap_matrix = transform_matrix(overlap_matrix, molecule_transform_indices)
     consistent_flag = check_eigenvalue_consistency(overlap_matrix, new_overlap_matrix)
     if consistent_flag:
         print('Overlap matrix transform is consistent for eigenvalues.')
@@ -373,8 +449,7 @@ def check_transform(filepath):
         print('Overlap matrix transform is non-consistent for eigenvalues.')
 
     density_matrix = read_density_from_gau_log(filepath, nbf=nbasis)
-    new_density_matrix = density_matrix[..., molecule_transform_indices, :]
-    new_density_matrix = new_density_matrix[..., :, molecule_transform_indices]
+    new_density_matrix = transform_matrix(density_matrix, molecule_transform_indices)
     consistent_flag = check_eigenvalue_consistency(density_matrix, new_density_matrix)
     if consistent_flag:
         print('Density matrix transform is consistent for eigenvalues.')
@@ -395,4 +470,4 @@ def traverse_cp_log(root_folder, logname, dst_folder):
             if file == logname:
                 folder_name = os.path.basename(subdir)
                 shutil.copy(src=os.path.join(subdir, file),
-                            dst=os.path.join(dst_folder, folder_name+'.log'))
+                            dst=os.path.join(dst_folder, folder_name + '.log'))

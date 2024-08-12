@@ -1,21 +1,17 @@
 import re
 import json
-from collections import Counter
 
-import matplotlib.pyplot as plt
 import numpy as np
 from ase import Atoms, Atom
-from ase.visualize import view
 from ...data import _keys
 from ...register import Register
 from ..parse import Parser, ParserRegister
 from .gaussian_tools import *
-from .gaussian_conventionns import *
 
 
 @ParserRegister.register("gaussian")
 class GaussianParser(Parser):
-    def __init__(self, root, prefix, convention_file=None, **kwargs):
+    def __init__(self, root, prefix, convention_file=None, valid_gau_info_path=None, **kwargs):
         super(GaussianParser, self).__init__(root, prefix)
         self.is_fixed_convention = False
         self.on_the_fly_convention_done = False
@@ -25,9 +21,15 @@ class GaussianParser(Parser):
                 self.convention = json.load(f)
         self.atomic_symbols = {}
         self.nbasis = {}
-        with open('src_data_path.txt', 'w') as f:
-            for a_raw_datapath in self.raw_datas:
-                f.write(a_raw_datapath + '\n')
+        if valid_gau_info_path:
+            self.raw_datas = []
+            with open(valid_gau_info_path, 'r') as file:
+                for line in file.readlines():
+                    self.raw_datas.append(line.strip())
+        else:
+            with open('valid_gaussian_logs.txt', 'w') as f:
+                for a_raw_datapath in self.raw_datas:
+                    f.write(a_raw_datapath + '\n')
 
     def get_structure(self, idx):
         file_path = self.raw_datas[idx]
@@ -52,26 +54,6 @@ class GaussianParser(Parser):
             self.on_the_fly_convention_done = True
         return self.convention['atom_to_dftio_orbitals']
 
-    def transform_matrix(self, matrix, transform_indices):
-        matrix = matrix[..., transform_indices, :]
-        matrix = matrix[..., :, transform_indices]
-        return matrix
-
-    def cut_matrix(self, full_matrix, atom_in_mo_indices):
-        partitioned_blocks = {}
-        unique_atoms = sorted(set(atom_in_mo_indices))
-        atom_positions = {atom: [i for i, x in enumerate(atom_in_mo_indices) if x == atom] for atom in unique_atoms}
-
-        # Extract blocks for each pair of atoms
-        for ii, i in enumerate(unique_atoms):
-            for j in unique_atoms[ii:]:
-                key = f"{i}_{j}_0_0_0"
-                rows = atom_positions[i]
-                cols = atom_positions[j]
-                block = full_matrix[np.ix_(rows, cols)]
-                partitioned_blocks[key] = block
-        return partitioned_blocks
-
     def get_blocks(self, idx, hamiltonian=True, overlap=False, density_matrix=False):
         file_path = self.raw_datas[idx]
         if idx not in self.nbasis.keys():
@@ -87,15 +69,15 @@ class GaussianParser(Parser):
         ham_dict, overlap_dict, density_dict = None, None, None
         if hamiltonian:
             hamiltonian_matrix = read_int1e_from_gau_log(file_path, matrix_type=3, nbf=nbasis)
-            hamiltonian_matrix = self.transform_matrix(matrix=hamiltonian_matrix, transform_indices=molecule_transform_indices)
-            ham_dict = self.cut_matrix(full_matrix=hamiltonian_matrix, atom_in_mo_indices=atom_in_mo_indices)
+            hamiltonian_matrix = transform_matrix(matrix=hamiltonian_matrix, transform_indices=molecule_transform_indices)
+            ham_dict = cut_matrix(full_matrix=hamiltonian_matrix, atom_in_mo_indices=atom_in_mo_indices)
         if overlap:
             overlap_matrix = read_int1e_from_gau_log(file_path, matrix_type=0, nbf=nbasis)
-            overlap_matrix = self.transform_matrix(matrix=overlap_matrix, transform_indices=molecule_transform_indices)
-            overlap_dict = self.cut_matrix(full_matrix=overlap_matrix, atom_in_mo_indices=atom_in_mo_indices)
+            overlap_matrix = transform_matrix(matrix=overlap_matrix, transform_indices=molecule_transform_indices)
+            overlap_dict = cut_matrix(full_matrix=overlap_matrix, atom_in_mo_indices=atom_in_mo_indices)
         if density_matrix:
             density_matrix = read_density_from_gau_log(file_path, nbf=nbasis)
-            density_matrix = self.transform_matrix(matrix=density_matrix, transform_indices=molecule_transform_indices)
-            density_dict = self.cut_matrix(full_matrix=density_matrix, atom_in_mo_indices=atom_in_mo_indices)
+            density_matrix = transform_matrix(matrix=density_matrix, transform_indices=molecule_transform_indices)
+            density_dict = cut_matrix(full_matrix=density_matrix, atom_in_mo_indices=atom_in_mo_indices)
 
         return [ham_dict], [overlap_dict], [density_dict]
