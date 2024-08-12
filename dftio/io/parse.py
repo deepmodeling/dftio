@@ -230,7 +230,7 @@ class Parser(ABC):
             eigstatus = self.get_eigenvalue(idx)
 
         n_frames = structure[_keys.POSITIONS_KEY].shape[0]
-        lmdb_env = lmdb.open(os.path.join(out_dir), lock=True)
+        lmdb_env = lmdb.open(os.path.join(out_dir), map_size=1048576000000, lock=True)
         for nf in range(n_frames):
             data_dict = {}
             data_dict[_keys.ATOMIC_NUMBERS_KEY] = structure[_keys.ATOMIC_NUMBERS_KEY]
