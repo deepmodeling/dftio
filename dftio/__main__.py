@@ -76,7 +76,7 @@ def main_parser() -> argparse.ArgumentParser:
         "--mode",
         type=str,
         default="abacus",
-        help="The name of the DFT software.",
+        help="The name of the DFT software, currently support abacus/rescu/siesta/gaussian",
     )
 
     parser_parse.add_argument(
@@ -116,7 +116,7 @@ def main_parser() -> argparse.ArgumentParser:
         "--format",
         type=str,
         default="dat",
-        help="The output root directory.",
+        help="The output file format, should be either dat or lmdb.",
     )
 
     parser_parse.add_argument(
