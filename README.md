@@ -1,15 +1,15 @@
 # dftio
-dftio is to assist machine learning communities to transcript and manupulate DFT output into a format that is easy to read or used by machine learning models. 
+dftio is to assist machine learning communities in transcribing and manipulating DFT output into a format that is easy to read or used by machine learning models. 
 
-dftio use multiprocessing to paralleling the processing, and provide standard dataset class that reads the processed dataset directly.
+dftio uses multiprocessing to paralleling the processing, and provide a standard dataset class that reads the processed dataset directly.
 
 ## Installation
 The user can install dftio once located in the root directory, and run:
 ```bash
 pip install .
 ```
-The dependent pacakges witll be installed accordingly.
-However, the user can always manage the dependency themselves, here is the packages that dftio requires:
+The dependent packages will be installed accordingly.
+However, the user can always manage the dependency themselves, here are the packages that dftio requires:
 
 ## Supports
 
@@ -58,4 +58,4 @@ optional arguments:
 ```
 
 ## Call for Developers
-dftio is a opensourced tools and are calling for enthusiastic developer to contribute their talent. One can constributing through raising function requirement issues, or contact the current developer directly.
+dftio is an open-source tool that calls for enthusiastic developers to contribute their talent. One can contribute through raising function requirement issues, or contact the current developer directly.
