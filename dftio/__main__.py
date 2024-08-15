@@ -197,7 +197,6 @@ def main():
                     )
         
         if args.num_workers > 1:
-
             with Pool(args.num_workers) as p:
                 list(tqdm(p.imap(wapper(dict_args), range(len(parser))), total=len(parser), desc="Parsing the DFT files: "))
         else:
