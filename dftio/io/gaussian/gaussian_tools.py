@@ -262,12 +262,42 @@ def generate_molecule_transform_indices(atom_types, atom_to_transform_indices):
     return molecule_transform_indices, atom_in_mo_indices
 
 
-def matrix_to_image(matrix, filename='matrix_image.png'):
+def get_orbital_labels(atom_symbols, orbital_configs):
+    """
+    Generate orbital labels for a molecule based on atom symbols and orbital configurations.
+
+    :param atom_symbols: List of atom symbols in the molecule (e.g., ['O', 'H', 'H'])
+    :param orbital_configs: Dictionary of orbital configurations for each atom type
+    :return: List of orbital labels for the entire molecule
+    """
+    orbital_labels = []
+
+    for atom in atom_symbols:
+        if atom not in orbital_configs:
+            raise ValueError(f"Orbital configuration for atom {atom} not found.")
+
+        atom_orbitals = orbital_configs[atom]
+        for orbital in atom_orbitals:
+            if orbital == 's':
+                orbital_labels.append('s')
+            elif orbital == 'p':
+                orbital_labels.extend(['p'] * 3)
+            elif orbital == 'd':
+                orbital_labels.extend(['d'] * 5)
+            elif orbital == 'f':
+                orbital_labels.extend(['f'] * 7)
+            else:
+                raise ValueError(f"Unknown orbital type: {orbital}")
+
+    return orbital_labels
+
+
+def matrix_to_image(matrix, filename='matrix_image.png', orbital_labels=None):
     # Convert the matrix to a numpy array
     matrix = np.array(matrix)
 
     # Create a new figure and axis
-    fig, ax = plt.subplots(figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=(30, 30))
 
     # Create a color-mapped image of the matrix
     im = ax.imshow(matrix, cmap='viridis')
@@ -292,9 +322,20 @@ def matrix_to_image(matrix, filename='matrix_image.png'):
     ax.set_xlabel('Column')
     ax.set_ylabel('Row')
 
-    # Remove ticks
-    ax.set_xticks([])
+    # Add custom tick labels for columns
+    if orbital_labels:
+        ax.set_xticks(range(len(orbital_labels)))
+        ax.set_xticklabels(orbital_labels)
+        ax.xaxis.set_ticks_position('top')
+        ax.tick_params(axis='x', rotation=0, labelsize=10, pad=5)
+    else:
+        ax.set_xticks([])
+
+    # Remove y-axis ticks
     ax.set_yticks([])
+
+    # Adjust layout to prevent clipping of tick-labels
+    plt.tight_layout()
 
     # Save the image
     plt.savefig(filename, dpi=300, bbox_inches='tight')
@@ -504,3 +545,52 @@ def traverse_cp_log(root_folder, logname, dst_folder):
                 folder_name = os.path.basename(subdir)
                 shutil.copy(src=os.path.join(subdir, file),
                             dst=os.path.join(dst_folder, folder_name + '.log'))
+
+
+def convert_to_sorted_orbitals(atom_to_dftio_orbitals):
+    atom_to_sorted_orbitals = {}
+
+    for atom, orbitals in atom_to_dftio_orbitals.items():
+        expanded_orbitals = ""
+        i = 0
+        while i < len(orbitals):
+            if orbitals[i].isdigit():
+                count = int(orbitals[i])
+                i += 1
+                orbital_type = orbitals[i]
+                expanded_orbitals += orbital_type * count
+            i += 1
+        atom_to_sorted_orbitals[atom] = expanded_orbitals
+
+    return atom_to_sorted_orbitals
+
+
+def get_phase_sign_list(atomic_symbols, atom_to_sorted_orbitals, orbital_sign_map):
+    phase_sign_list = []
+
+    for symbol in atomic_symbols:
+        if symbol in atom_to_sorted_orbitals:
+            simplified_orbitals = atom_to_sorted_orbitals[symbol]
+
+            for orbital in simplified_orbitals:
+                if orbital in orbital_sign_map:
+                    phase_sign_list.extend(orbital_sign_map[orbital])
+                else:
+                    raise ValueError(f"Unknown orbital type: {orbital}")
+        else:
+            raise ValueError(f"Unknown atomic symbol: {symbol}")
+
+    return phase_sign_list
+
+
+def apply_phase_signs_to_matrix(matrix, phase_sign_list):
+    # Ensure the dimensions match
+    if matrix.shape[0] != len(phase_sign_list) or matrix.shape[1] != len(phase_sign_list):
+        raise ValueError("Hamiltonian dimensions do not match the phase sign list length")
+
+    # Create a 2D array of phase signs
+    phase_sign_matrix = np.outer(phase_sign_list, phase_sign_list)
+    # Apply the phase signs to the Hamiltonian
+    modified_matrix = matrix * phase_sign_matrix
+
+    return modified_matrix

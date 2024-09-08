@@ -7,12 +7,14 @@ from ...data import _keys
 from ...register import Register
 from ..parse import Parser, ParserRegister
 from .gaussian_tools import *
+from .gaussian_conventionns import orbital_sign_map
 
 
 @ParserRegister.register("gaussian")
 class GaussianParser(Parser):
-    def __init__(self, root, prefix, convention_file=None, valid_gau_info_path=None, **kwargs):
+    def __init__(self, root, prefix, convention_file=None, valid_gau_info_path=None, add_phase_transfer=False, **kwargs):
         super(GaussianParser, self).__init__(root, prefix)
+        self.add_phase_transfer = add_phase_transfer
         self.is_fixed_convention = False
         self.on_the_fly_convention_done = False
         if convention_file:
@@ -56,28 +58,56 @@ class GaussianParser(Parser):
 
     def get_blocks(self, idx, hamiltonian=True, overlap=False, density_matrix=False):
         file_path = self.raw_datas[idx]
-        if idx not in self.nbasis.keys():
-            nbasis, atoms = get_basic_info(file_path)
-            atomic_symbols = atoms.symbols
-        else:
-            nbasis = self.nbasis[idx]
-            atomic_symbols = self.atomic_symbols[idx]
-        if self.is_fixed_convention == False and self.on_the_fly_convention_done == False:
-            self.convention = get_convention(file_path)
-        molecule_transform_indices, atom_in_mo_indices = generate_molecule_transform_indices(atom_types=atomic_symbols,
-                                            atom_to_transform_indices=self.convention['atom_to_transform_indices'])
-        ham_dict, overlap_dict, density_dict = None, None, None
-        if hamiltonian:
-            hamiltonian_matrix = read_fock_from_gau_log(file_path, nbf=nbasis)
-            hamiltonian_matrix = transform_matrix(matrix=hamiltonian_matrix, transform_indices=molecule_transform_indices)
-            ham_dict = cut_matrix(full_matrix=hamiltonian_matrix, atom_in_mo_indices=atom_in_mo_indices)
-        if overlap:
-            overlap_matrix = read_int1e_from_gau_log(file_path, matrix_type=0, nbf=nbasis)
-            overlap_matrix = transform_matrix(matrix=overlap_matrix, transform_indices=molecule_transform_indices)
-            overlap_dict = cut_matrix(full_matrix=overlap_matrix, atom_in_mo_indices=atom_in_mo_indices)
-        if density_matrix:
-            density_matrix = read_density_from_gau_log(file_path, nbf=nbasis)
-            density_matrix = transform_matrix(matrix=density_matrix, transform_indices=molecule_transform_indices)
-            density_dict = cut_matrix(full_matrix=density_matrix, atom_in_mo_indices=atom_in_mo_indices)
 
-        return [ham_dict], [overlap_dict], [density_dict]
+        # Cache basic info
+        if idx not in self.nbasis.keys():
+            self.nbasis[idx], atoms = get_basic_info(file_path)
+            self.atomic_symbols[idx] = atoms.symbols
+        nbasis = self.nbasis[idx]
+        atomic_symbols = self.atomic_symbols[idx]
+
+        # Get convention if needed
+        if not self.is_fixed_convention and not self.on_the_fly_convention_done:
+            self.convention = get_convention(file_path)
+
+        # Generate indices
+        molecule_transform_indices, atom_in_mo_indices = generate_molecule_transform_indices(
+            atom_types=atomic_symbols,
+            atom_to_transform_indices=self.convention['atom_to_transform_indices']
+        )
+
+        # Get phase sign list if needed
+        phase_sign_list = None
+        if self.add_phase_transfer:
+            atom_to_sorted_orbitals = convert_to_sorted_orbitals(self.convention['atom_to_dftio_orbitals'])
+            phase_sign_list = get_phase_sign_list(
+                atomic_symbols=atomic_symbols,
+                atom_to_sorted_orbitals=atom_to_sorted_orbitals,
+                orbital_sign_map=orbital_sign_map
+            )
+
+        results = []
+        for matrix_type, should_compute in [
+            ('ham', hamiltonian),
+            ('overlap', overlap),
+            ('density', density_matrix)
+        ]:
+            if should_compute:
+                if matrix_type == 'ham':
+                    matrix = read_fock_from_gau_log(file_path, nbf=nbasis)
+                elif matrix_type == 'overlap':
+                    matrix = read_int1e_from_gau_log(file_path, matrix_type=0, nbf=nbasis)
+                else:
+                    matrix = read_density_from_gau_log(file_path, nbf=nbasis)
+
+                matrix = transform_matrix(matrix=matrix, transform_indices=molecule_transform_indices)
+
+                if self.add_phase_transfer:
+                    matrix = apply_phase_signs_to_matrix(matrix, phase_sign_list)
+
+                result = cut_matrix(full_matrix=matrix, atom_in_mo_indices=atom_in_mo_indices)
+            else:
+                result = None
+            results.append([result])
+
+        return results
