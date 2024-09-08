@@ -22,7 +22,7 @@ def chk_valid_gau_log_unit(file_path, hamiltonian=False, overlap=False, density_
     ]
 
     if hamiltonian:
-        required_patterns.append(r"\*+\s*Core Hamiltonian\s*\*+")
+        required_patterns.append(r" Fock matrix")
     if overlap:
         required_patterns.append(r"\*+\s*Overlap\s*\*+")
     if density_matrix:
