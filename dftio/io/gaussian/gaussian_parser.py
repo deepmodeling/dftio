@@ -68,7 +68,7 @@ class GaussianParser(Parser):
                                             atom_to_transform_indices=self.convention['atom_to_transform_indices'])
         ham_dict, overlap_dict, density_dict = None, None, None
         if hamiltonian:
-            hamiltonian_matrix = read_int1e_from_gau_log(file_path, matrix_type=3, nbf=nbasis)
+            hamiltonian_matrix = read_fock_from_gau_log(file_path, nbf=nbasis)
             hamiltonian_matrix = transform_matrix(matrix=hamiltonian_matrix, transform_indices=molecule_transform_indices)
             ham_dict = cut_matrix(full_matrix=hamiltonian_matrix, atom_in_mo_indices=atom_in_mo_indices)
         if overlap:
