@@ -11,7 +11,7 @@ import numpy as np
 from collections import Counter
 from ..parse import Parser, ParserRegister, find_target_line
 from ...data import _keys
-import sisl
+# import sisl
 
 
 @ParserRegister.register("siesta")
