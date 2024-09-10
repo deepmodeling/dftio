@@ -215,6 +215,10 @@ class Field(object):
         if len(coords.shape) < 2:
             coords = coords.unsqueeze(0)
 
+        if len(self._rot_mat) > 0:
+            for item in self._rot_mat:
+                coords = (item @ coords.T).T
+
         coords += self.origin.reshape(1, 3)
 
         if self._origin_has_changed:
@@ -222,10 +226,6 @@ class Field(object):
 
         if isinstance(translate, np.ndarray):
             coords = coords - torch.as_tensor(np.squeeze(translate), dtype=torch.float32)
-
-        if len(self._rot_mat) > 0:
-            for item in self._rot_mat:
-                coords = (item @ coords.T).T
 
         return coords
 
@@ -253,10 +253,6 @@ class Field(object):
         if len(coords.shape) < 2:
             coords = coords.unsqueeze(0)
 
-        if len(self._rot_mat) > 0:
-            for item in reversed(self._rot_mat):
-                coords = (torch.linalg.inv(item) @ coords.T).T
-
         if isinstance(translate, np.ndarray):
             translate = torch.as_tensor(translate, dtype=torch.float32)
         else:
@@ -268,6 +264,10 @@ class Field(object):
             coords = coords - self._origin_shift.reshape(1, 3)
 
         coords -= self.origin.reshape(1, 3)
+
+        if len(self._rot_mat) > 0:
+            for item in reversed(self._rot_mat):
+                coords = (torch.linalg.inv(item) @ coords.T).T
 
         return coords
 
