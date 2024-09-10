@@ -249,7 +249,9 @@ class Parser(ABC):
             if density_matrix:
                 data_dict["density_matrix"] = dm[nf]
 
-            
+            data_dict["idx"] = idx
+            data_dict["nf"] = nf
+
             data_dict = pickle.dumps(data_dict)
 
             # write
