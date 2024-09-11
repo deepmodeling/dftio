@@ -22,6 +22,9 @@ dargs = "0.4.4"
 e3nn = ">=0.5.1"
 h5py = "3.7.0"
 lmdb = "1.4.1"
+sisl = ">=0.14.3"
+dpdata = ">=0.2.20"
+
 
 [tool.poetry.scripts]
 dftio = 'dftio.__main__:main'

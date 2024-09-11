@@ -1,4 +1,4 @@
-from dptb.utils._xitorch.interpolate import Interp1D
+from dftio.dep._xitorch.interpolate import Interp1D
 import torch
 
 import scipy.sparse.csgraph as csgraph

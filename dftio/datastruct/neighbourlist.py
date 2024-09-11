@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-from dptb.utils._xitorch.interpolate import Interp1D
 import torch
 import itertools
 from scipy.interpolate import RegularGridInterpolator
