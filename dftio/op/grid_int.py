@@ -29,7 +29,7 @@ class SingleGridIntegrator:
             self.cell_shift.append(self.nblist.displacements[i])
 
         self.index = torch.tensor(self.index, dtype=torch.long)
-        self.cell_shift = torch.from_numpy(np.concatenate(self.cell_shift, axis=0, dtype=np.long))
+        self.cell_shift = torch.from_numpy(np.concatenate(self.cell_shift, axis=0, dtype=np.int32))
 
     def integrate(self, weights=None):
         
