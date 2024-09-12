@@ -4,8 +4,8 @@ from abc import abstractmethod
 import copy
 import torch
 from typing import Sequence, Union, Dict, List
-from dptb.utils._xitorch._utils.exceptions import GetSetParamsError
-from dptb.utils._xitorch._utils.attr import get_attr, set_attr, del_attr
+from dftio.dep._xitorch._utils.exceptions import GetSetParamsError
+from dftio.dep._xitorch._utils.attr import get_attr, set_attr, del_attr
 
 __all__ = ["EditableModule"]
 

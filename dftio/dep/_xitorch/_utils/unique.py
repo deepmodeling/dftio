@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict
-from dptb.utils._xitorch._utils.assertfuncs import assert_runtime
+from dftio.dep._xitorch._utils.assertfuncs import assert_runtime
 
 class Uniquifier(object):
     def __init__(self, allobjs: List):

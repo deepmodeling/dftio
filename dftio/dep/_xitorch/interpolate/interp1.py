@@ -1,9 +1,9 @@
 from typing import Optional, List, Union, Callable
 import torch
-from dptb.utils._xitorch._core.editable_module import EditableModule
-from dptb.utils._xitorch._impls.interpolate.interp_1d import CubicSpline1D, LinearInterp1D
-from dptb.utils._xitorch._utils.bcast import match_dim
-from dptb.utils._xitorch._utils.misc import get_method
+from dftio.dep._xitorch._core.editable_module import EditableModule
+from dftio.dep._xitorch._impls.interpolate.interp_1d import CubicSpline1D, LinearInterp1D
+from dftio.dep._xitorch._utils.bcast import match_dim
+from dftio.dep._xitorch._utils.misc import get_method
 
 __all__ = ["Interp1D"]
 

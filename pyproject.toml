@@ -24,7 +24,7 @@ h5py = "3.7.0"
 lmdb = "1.4.1"
 sisl = ">=0.14.3"
 dpdata = ">=0.2.20"
-
+torch_scatter = "2.1.2"
 
 [tool.poetry.scripts]
 dftio = 'dftio.__main__:main'

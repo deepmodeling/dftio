@@ -1,9 +1,9 @@
 import torch
 import inspect
 from typing import Callable, List, Tuple, Union, Sequence
-from dptb.utils._xitorch._utils.attr import set_attr, del_attr
-from dptb.utils._xitorch._utils.unique import Uniquifier
-from dptb.utils._xitorch._core.editable_module import EditableModule
+from dftio.dep._xitorch._utils.attr import set_attr, del_attr
+from dftio.dep._xitorch._utils.unique import Uniquifier
+from dftio.dep._xitorch._core.editable_module import EditableModule
 from contextlib import contextmanager
 from abc import abstractmethod
 

@@ -1,7 +1,7 @@
 import torch
-import dptb.utils._xitorch as xt
+import dftio.dep._xitorch as xt
 from abc import abstractmethod
-from dptb.utils._xitorch._impls.interpolate.interp_1d import _get_spline_mat_inv
+from dftio.dep._xitorch._impls.interpolate.interp_1d import _get_spline_mat_inv
 
 """
 This file contains the cumulative sum quadrature functions.
