@@ -2,9 +2,9 @@ from typing import Optional
 import torch
 import warnings
 from abc import abstractmethod
-from dptb.utils._xitorch._impls.interpolate.base_interp import BaseInterp
-from dptb.utils._xitorch._impls.interpolate.extrap_utils import get_extrap_pos, get_extrap_val
-from dptb.utils._xitorch._utils.bcast import match_dim
+from dftio.dep._xitorch._impls.interpolate.base_interp import BaseInterp
+from dftio.dep._xitorch._impls.interpolate.extrap_utils import get_extrap_pos, get_extrap_val
+from dftio.dep._xitorch._utils.bcast import match_dim
 
 class BaseInterp1D(BaseInterp):
     def __init__(self, x: torch.Tensor, y: Optional[torch.Tensor] = None, extrap: Optional[str] = None,
