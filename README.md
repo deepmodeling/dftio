@@ -57,5 +57,8 @@ optional arguments:
   -eig, --eigenvalue    Whether to parse the kpoints and eigenvalues (default: False)
 ```
 
-## Call for Developers
+## Call for Contributors
 dftio is an open-source tool that calls for enthusiastic developers to contribute their talent. One can contribute through raising function requirement issues, or contact the current developer directly.
+
+### Current Contributors (in alphabetical order)
+Qiangqiang Gu, Jijie Zou, Mingkang Liu, Zixi Gan, Zhanghao Zhouyin
