@@ -24,10 +24,7 @@ class GaussianParser(Parser):
         self.atomic_symbols = {}
         self.nbasis = {}
         if valid_gau_info_path:
-            self.raw_datas = []
-            with open(valid_gau_info_path, 'r') as file:
-                for line in file.readlines():
-                    self.raw_datas.append(line.strip())
+            self.raw_datas = get_gau_logs(valid_gau_info_path)
         else:
             with open('valid_gaussian_logs.txt', 'w') as f:
                 for a_raw_datapath in self.raw_datas:

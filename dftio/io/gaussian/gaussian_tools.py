@@ -547,6 +547,22 @@ def traverse_cp_log(root_folder, logname, dst_folder):
                             dst=os.path.join(dst_folder, folder_name + '.log'))
 
 
+def traverse_find_log(root_folder, logname):
+    root_folder = os.path.abspath(root_folder)
+    for subdir, dirs, files in os.walk(root_folder):
+        for file in files:
+            if file == logname:
+                yield os.path.join(subdir, file)
+
+
+def get_gau_logs(valid_file_path: str):
+    gau_log_list = []
+    with open(valid_file_path, 'r') as file:
+        for line in file.readlines():
+            gau_log_list.append(line.strip())
+    return gau_log_list
+
+
 def convert_to_sorted_orbitals(atom_to_dftio_orbitals):
     atom_to_sorted_orbitals = {}
 
