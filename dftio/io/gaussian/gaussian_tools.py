@@ -68,6 +68,46 @@ def chk_valid_gau_logs(root, prefix, hamiltonian=False, overlap=False, density_m
     print(f"Invalid file paths written to: {invalid_gau_info_path}")
 
 
+def split_files_by_atoms(file_list_path, output_train_path, output_valid_path, output_test_path):
+    # Read file paths from the input file
+    with open(file_list_path, 'r') as file:
+        file_paths = file.readlines()
+
+    train_set = []
+    valid_set = []
+    test_set = []
+
+    # Iterate over the file paths
+    for file_path in file_paths:
+        file_path = file_path.strip()  # Clean up any extra spaces or newlines
+        if os.path.exists(file_path):
+            try:
+                nbasis, atoms = get_basic_info(file_path)
+                num_atoms = len(atoms)
+
+                # Classify the file paths based on the number of atoms
+                if num_atoms <= 20:
+                    train_set.append(file_path)
+                elif num_atoms in [21, 22]:
+                    valid_set.append(file_path)
+                else:
+                    test_set.append(file_path)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+
+    # Save the file paths into the respective output files
+    with open(output_train_path, 'w') as train_file:
+        train_file.write("\n".join(train_set))
+
+    with open(output_valid_path, 'w') as valid_file:
+        valid_file.write("\n".join(valid_set))
+
+    with open(output_test_path, 'w') as test_file:
+        test_file.write("\n".join(test_set))
+
+    print(f'train/valid/test size: {len(train_set)}/{len(valid_set)}/{len(test_set)}')
+
+
 def transform_matrix(matrix, transform_indices):
     matrix = matrix[..., transform_indices, :]
     matrix = matrix[..., :, transform_indices]
