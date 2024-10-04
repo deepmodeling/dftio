@@ -22,7 +22,7 @@ def chk_valid_gau_log_unit(file_path, hamiltonian=False, overlap=False, density_
     ]
 
     if hamiltonian:
-        required_patterns.append(r"\*+\s*Core Hamiltonian\s*\*+")
+        required_patterns.append(r" Fock matrix")
     if overlap:
         required_patterns.append(r"\*+\s*Overlap\s*\*+")
     if density_matrix:
@@ -54,7 +54,7 @@ def chk_valid_gau_logs(root, prefix, hamiltonian=False, overlap=False, density_m
     file_paths = glob.glob(root + '/*' + prefix + '*')
     valid_count = 0
     invalid_count = 0
-    with open(valid_gau_info_path, 'w') as valid_file, open(invalid_gau_info_path, 'w') as invalid_file:
+    with open(valid_gau_info_path, 'a') as valid_file, open(invalid_gau_info_path, 'a') as invalid_file:
         for a_file in file_paths:
             if chk_valid_gau_log_unit(a_file, hamiltonian, overlap, density_matrix, is_fixed_convention):
                 valid_file.write(f"{a_file}\n")
@@ -66,6 +66,46 @@ def chk_valid_gau_logs(root, prefix, hamiltonian=False, overlap=False, density_m
     print(f"Invalid Gaussian log files: {invalid_count}")
     print(f"Valid file paths written to: {valid_gau_info_path}")
     print(f"Invalid file paths written to: {invalid_gau_info_path}")
+
+
+def split_files_by_atoms(file_list_path, output_train_path, output_valid_path, output_test_path):
+    # Read file paths from the input file
+    with open(file_list_path, 'r') as file:
+        file_paths = file.readlines()
+
+    train_set = []
+    valid_set = []
+    test_set = []
+
+    # Iterate over the file paths
+    for file_path in file_paths:
+        file_path = file_path.strip()  # Clean up any extra spaces or newlines
+        if os.path.exists(file_path):
+            try:
+                nbasis, atoms = get_basic_info(file_path)
+                num_atoms = len(atoms)
+
+                # Classify the file paths based on the number of atoms
+                if num_atoms <= 20:
+                    train_set.append(file_path)
+                elif num_atoms in [21, 22]:
+                    valid_set.append(file_path)
+                else:
+                    test_set.append(file_path)
+            except Exception as e:
+                print(f"Error processing {file_path}: {e}")
+
+    # Save the file paths into the respective output files
+    with open(output_train_path, 'w') as train_file:
+        train_file.write("\n".join(train_set))
+
+    with open(output_valid_path, 'w') as valid_file:
+        valid_file.write("\n".join(valid_set))
+
+    with open(output_test_path, 'w') as test_file:
+        test_file.write("\n".join(test_set))
+
+    print(f'train/valid/test size: {len(train_set)}/{len(valid_set)}/{len(test_set)}')
 
 
 def transform_matrix(matrix, transform_indices):
@@ -262,12 +302,42 @@ def generate_molecule_transform_indices(atom_types, atom_to_transform_indices):
     return molecule_transform_indices, atom_in_mo_indices
 
 
-def matrix_to_image(matrix, filename='matrix_image.png'):
+def get_orbital_labels(atom_symbols, orbital_configs):
+    """
+    Generate orbital labels for a molecule based on atom symbols and orbital configurations.
+
+    :param atom_symbols: List of atom symbols in the molecule (e.g., ['O', 'H', 'H'])
+    :param orbital_configs: Dictionary of orbital configurations for each atom type
+    :return: List of orbital labels for the entire molecule
+    """
+    orbital_labels = []
+
+    for atom in atom_symbols:
+        if atom not in orbital_configs:
+            raise ValueError(f"Orbital configuration for atom {atom} not found.")
+
+        atom_orbitals = orbital_configs[atom]
+        for orbital in atom_orbitals:
+            if orbital == 's':
+                orbital_labels.append('s')
+            elif orbital == 'p':
+                orbital_labels.extend(['p'] * 3)
+            elif orbital == 'd':
+                orbital_labels.extend(['d'] * 5)
+            elif orbital == 'f':
+                orbital_labels.extend(['f'] * 7)
+            else:
+                raise ValueError(f"Unknown orbital type: {orbital}")
+
+    return orbital_labels
+
+
+def matrix_to_image(matrix, filename='matrix_image.png', orbital_labels=None):
     # Convert the matrix to a numpy array
     matrix = np.array(matrix)
 
     # Create a new figure and axis
-    fig, ax = plt.subplots(figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=(30, 30))
 
     # Create a color-mapped image of the matrix
     im = ax.imshow(matrix, cmap='viridis')
@@ -292,9 +362,20 @@ def matrix_to_image(matrix, filename='matrix_image.png'):
     ax.set_xlabel('Column')
     ax.set_ylabel('Row')
 
-    # Remove ticks
-    ax.set_xticks([])
+    # Add custom tick labels for columns
+    if orbital_labels:
+        ax.set_xticks(range(len(orbital_labels)))
+        ax.set_xticklabels(orbital_labels)
+        ax.xaxis.set_ticks_position('top')
+        ax.tick_params(axis='x', rotation=0, labelsize=10, pad=5)
+    else:
+        ax.set_xticks([])
+
+    # Remove y-axis ticks
     ax.set_yticks([])
+
+    # Adjust layout to prevent clipping of tick-labels
+    plt.tight_layout()
 
     # Save the image
     plt.savefig(filename, dpi=300, bbox_inches='tight')
@@ -354,6 +435,39 @@ def read_int1e_from_gau_log(logname, matrix_type, nbf):
         else:
             raise ValueError(f"No match for '{matrix_types[matrix_type]}' found in file {logname}")
 
+        # Read the matrix data
+        n = (nbf + 4) // 5  # Equivalent to ceiling division
+        for i in range(n):
+            next(f)  # Skip the line with column numbers
+            k = 5 * i
+            for j in range(k, nbf):
+                line = next(f).split()
+                m = min(5, nbf - k)
+                actual_line_len = len(line[1:m + 1])
+                mat[k:k + actual_line_len, j] = [float(x.replace('D', 'E')) for x in line[1:m + 1]]
+    # Mirror the upper triangle to the lower triangle
+    mat = mat + mat.T - np.diag(mat.diagonal())
+    return mat
+
+
+# modified from Mokit,
+# see https://github.com/1234zou/MOKIT/blob/7499356b1ff0f9d8b9efbb846395059867dbba4c/src/rwwfn.f90#L895
+# Key word IOp(5/33=3, 3/33=1) is required
+def read_fock_from_gau_log(logname, nbf):
+    target_pattern = re.compile(rf" Fock matrix")
+    pattern_counts = 0
+    with open(logname, 'r') as f:
+        for line in f:
+            if target_pattern.search(line):
+                pattern_counts = pattern_counts + 1
+    current_counts = 0
+    mat = np.zeros((nbf, nbf))
+    with open(logname, 'r') as f:
+        for line in f:
+            if target_pattern.search(line):
+                current_counts = current_counts + 1
+            if current_counts == pattern_counts:
+                break
         # Read the matrix data
         n = (nbf + 4) // 5  # Equivalent to ceiling division
         for i in range(n):
@@ -471,3 +585,68 @@ def traverse_cp_log(root_folder, logname, dst_folder):
                 folder_name = os.path.basename(subdir)
                 shutil.copy(src=os.path.join(subdir, file),
                             dst=os.path.join(dst_folder, folder_name + '.log'))
+
+
+def traverse_find_log(root_folder, logname):
+    root_folder = os.path.abspath(root_folder)
+    for subdir, dirs, files in os.walk(root_folder):
+        for file in files:
+            if file == logname:
+                yield os.path.join(subdir, file)
+
+
+def get_gau_logs(valid_file_path: str):
+    gau_log_list = []
+    with open(valid_file_path, 'r') as file:
+        for line in file.readlines():
+            gau_log_list.append(line.strip())
+    return gau_log_list
+
+
+def convert_to_sorted_orbitals(atom_to_dftio_orbitals):
+    atom_to_sorted_orbitals = {}
+
+    for atom, orbitals in atom_to_dftio_orbitals.items():
+        expanded_orbitals = ""
+        i = 0
+        while i < len(orbitals):
+            if orbitals[i].isdigit():
+                count = int(orbitals[i])
+                i += 1
+                orbital_type = orbitals[i]
+                expanded_orbitals += orbital_type * count
+            i += 1
+        atom_to_sorted_orbitals[atom] = expanded_orbitals
+
+    return atom_to_sorted_orbitals
+
+
+def get_phase_sign_list(atomic_symbols, atom_to_sorted_orbitals, orbital_sign_map):
+    phase_sign_list = []
+
+    for symbol in atomic_symbols:
+        if symbol in atom_to_sorted_orbitals:
+            simplified_orbitals = atom_to_sorted_orbitals[symbol]
+
+            for orbital in simplified_orbitals:
+                if orbital in orbital_sign_map:
+                    phase_sign_list.extend(orbital_sign_map[orbital])
+                else:
+                    raise ValueError(f"Unknown orbital type: {orbital}")
+        else:
+            raise ValueError(f"Unknown atomic symbol: {symbol}")
+
+    return phase_sign_list
+
+
+def apply_phase_signs_to_matrix(matrix, phase_sign_list):
+    # Ensure the dimensions match
+    if matrix.shape[0] != len(phase_sign_list) or matrix.shape[1] != len(phase_sign_list):
+        raise ValueError("Hamiltonian dimensions do not match the phase sign list length")
+
+    # Create a 2D array of phase signs
+    phase_sign_matrix = np.outer(phase_sign_list, phase_sign_list)
+    # Apply the phase signs to the Hamiltonian
+    modified_matrix = matrix * phase_sign_matrix
+
+    return modified_matrix
