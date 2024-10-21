@@ -512,7 +512,7 @@ def get_atoms(file_path):
 
 
 # Key word Pop=Full is required
-def get_convention(filename, dump_file=None):
+def get_convention(filename, dump_file=None, orbital_idx_map=orbital_idx_map):
     nbasis = get_nbasis(filename)
     basis_name = find_basis_set(filename)
     orbitals, atom_to_orbitals, atom_to_simplified_orbitals, atom_to_dftio_orbitals, atom_to_transform_indices = parse_orbital_populations(
