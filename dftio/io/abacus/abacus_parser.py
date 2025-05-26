@@ -60,7 +60,12 @@ class AbacusParser(Parser):
             with open(os.path.join(path, "OUT.ABACUS", "kpoints"), "r") as f:
                 line = find_target_line(f, "nkstot now")
                 nkstot = line.strip().split()[-1]
-                line = find_target_line(f, " KPT ")
+                line = find_target_line(f, "KPOINTS ")
+                if not line:
+                    f.seek(0)
+                    line = find_target_line(f, "KPT ")
+                if not line: 
+                    raise Exception("Cannot find KPT or KPOINTS in kpoints file")
                 for _ in range(int(nkstot)):
                     line = f.readline()
                     kpt = []
