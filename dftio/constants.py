@@ -84,7 +84,7 @@ OPENMX_orbital_number_m = {
     "f": [0, 1, -1, 2, -2, 3, -3]
 }
 
-OPENMX2DeePTB = {
+OPENMX2DFTIO = {
             0: np.eye(1, dtype=np.float32),
             1: np.eye(3, dtype=np.float32)[[1, 2, 0]],
             2: np.eye(5, dtype=np.float32)[[2, 4, 0, 3, 1]],
