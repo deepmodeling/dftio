@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
@@ -38,3 +38,6 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
+        use_oidc: true
+permissions:
+  id-token: write
