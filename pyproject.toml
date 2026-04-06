@@ -6,7 +6,8 @@ authors = [
     {name = "Z. Zhouyin", email = "zhouyinzhanghao@gmail.com"}
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9,<3.13"
 dependencies = [
     "numpy",
@@ -42,7 +43,7 @@ dftio = "dftio.__main__:main"
 Repository = "https://github.com/deepmodeling/dftio"
 
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=77.0.3", "setuptools>=77.0.3-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
