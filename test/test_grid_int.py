@@ -5,6 +5,14 @@ from dftio.op.grid_int import SingleGridIntegrator
 from dftio.datastruct import AtomicBasis
 import ase.data as data
 
+try:
+    import torch_scatter  # noqa: F401
+    _SCATTER_AVAILABLE = True
+except ImportError:
+    _SCATTER_AVAILABLE = False
+
+needs_scatter = pytest.mark.skipif(not _SCATTER_AVAILABLE, reason="torch-scatter not installed")
+
 class MockAtomicBasis:
     def __init__(self, atomic_numbers):
         self.atomic_numbers = atomic_numbers
@@ -44,6 +52,7 @@ def test_single_grid_integrator_init(mock_atomic_basis):
     assert sgi.coordinates.shape == (1, 3)
     assert sgi.grids.shape == (1, 3)
 
+@needs_scatter
 def test_integrate(mock_atomic_basis):
     """Test integrate method."""
     atomic_numbers = [1]

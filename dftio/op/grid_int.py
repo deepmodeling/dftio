@@ -1,7 +1,6 @@
 from ..datastruct import PrimitiveFieldsNeighborList
 import torch
 import ase.data as data
-from torch_scatter import scatter_sum
 import numpy as np
 
 atomic_numbers_r = dict(zip(data.atomic_numbers.values(), data.atomic_numbers.keys()))
@@ -32,7 +31,16 @@ class SingleGridIntegrator:
         self.cell_shift = torch.from_numpy(np.concatenate(self.cell_shift, axis=0, dtype=np.int32))
 
     def integrate(self, weights=None):
-        
+        try:
+            from torch_scatter import scatter_sum
+        except ImportError:
+            raise ImportError(
+                "torch-scatter is required for grid integration (LDOS calculations). "
+                "Install it with: pip install torch-scatter -f https://data.pyg.org/whl/torch-2.5.0+cpu.html\n"
+                "Or: pip install dftio[scatter] -f https://data.pyg.org/whl/torch-2.5.0+cpu.html\n"
+                "Or: pip install dftio[full] -f https://data.pyg.org/whl/torch-2.5.0+cpu.html"
+            )
+
         ngrid = len(self.grids)
         dtype = weights.dtype if weights is not None else self.dtype
         results = torch.zeros(ngrid, dtype=dtype)

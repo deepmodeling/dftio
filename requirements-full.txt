@@ -1,0 +1,3 @@
+--find-links https://data.pyg.org/whl/torch-2.5.0+cpu.html
+-r requirements.txt
+torch-scatter==2.1.2
