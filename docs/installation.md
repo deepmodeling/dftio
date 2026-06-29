@@ -38,11 +38,27 @@ If you prefer to manage the installation yourself, you can use `uv`.
     ```
     Including the `--group dev` flag will also install the packages required for testing and building documentation.
 
-## Using pip (from PyPI)
+## Using pip
 
-*Coming soon. Once `dftio` is published to the Python Package Index (PyPI), you will be able to install it directly with `pip`.*
+You can install `dftio` directly with pip:
 
 ```bash
-# This will be enabled in a future release
-# pip install dftio
+# Basic install (all core features except grid integration / LDOS)
+pip install dftio
+
+# Install with grid integration support for LDOS calculations
+pip install "dftio[scatter]" -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+
+# Install with all optional dependencies (scatter + dev tools)
+pip install "dftio[full]" -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+
+# For GPU users, replace 'cpu' with your CUDA version (e.g., cu121, cu124)
+pip install "dftio[scatter]" -f https://data.pyg.org/whl/torch-2.5.0+cu121.html
+
+# Or install from requirements files
+pip install -r requirements.txt          # core only
+pip install -r requirements-full.txt     # core + scatter + dev
+pip install -r requirements-dev.txt      # core + dev tools
 ```
+
+> **Note:** The `scatter` extra installs `torch-scatter`, which is only needed for LDOS (Local Density of States) calculations via `dftio.calc.ldos`. All other dftio functionality works without it.

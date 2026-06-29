@@ -39,13 +39,28 @@ uv sync
 uv sync --find-links https://data.pyg.org/whl/torch-2.5.0+cu121.html
 ```
 
-### Using pip (from PyPI - coming soon)
+### Using pip
 
 ```bash
+# Basic install (all core features except grid integration / LDOS)
 pip install dftio
+
+# Install with grid integration support (LDOS calculations)
+pip install "dftio[scatter]" -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+
+# Install with all optional dependencies (includes scatter + dev tools)
+pip install "dftio[full]" -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+
+# For GPU users, replace 'cpu' with your CUDA version (e.g., cu121)
+pip install "dftio[scatter]" -f https://data.pyg.org/whl/torch-2.5.0+cu121.html
+
+# Or install from requirements files
+pip install -r requirements.txt          # core only
+pip install -r requirements-full.txt     # core + scatter + dev
+pip install -r requirements-dev.txt      # core + dev tools
 ```
 
-**Note**: dftio depends on `torch-scatter` which requires special handling. The install script automatically manages this for you.
+**Note**: The `scatter` extra installs `torch-scatter`, which is only needed for LDOS (Local Density of States) calculations via `dftio.calc.ldos`. All other dftio functionality (parsing, data structures, CLI) works without it.
 
 ## Supports
 

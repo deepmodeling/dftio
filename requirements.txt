@@ -1,0 +1,14 @@
+numpy
+scipy>=1.11,<1.12
+matplotlib
+torch>=2.0.0,<2.5.1
+ase
+pyyaml
+future
+dargs==0.4.4
+e3nn>=0.5.1
+h5py>=3.7.0,<3.11.0,!=3.10.0
+lmdb==1.4.1
+sisl>=0.14.3
+dpdata>=0.2.20
+tqdm

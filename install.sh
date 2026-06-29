@@ -45,9 +45,9 @@ if ! command -v uv &> /dev/null; then
 fi
 
 # Sync dependencies with the specified find-links
-echo "Installing dftio with torch_scatter ($VARIANT version)..."
+echo "Installing dftio with torch_scatter ($VARIANT version) [scatter extra]..."
 echo "Using Python: $(which python)"
-uv sync --python $(which python) --find-links "$FIND_LINKS_URL"
+uv sync --python "$(which python)" --extra scatter --find-links "$FIND_LINKS_URL"
 
 echo ""
 echo "✅ Installation complete!"

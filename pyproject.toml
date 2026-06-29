@@ -22,7 +22,6 @@ dependencies = [
     "lmdb==1.4.1",
     "sisl>=0.14.3",
     "dpdata>=0.2.20",
-    "torch-scatter==2.1.2",
     "tqdm",
 ]
 
@@ -32,6 +31,17 @@ dev = [
     "pytest-order==1.2.0",
     "pytest-cov",
     "jupyter-book>=0.15,<1.0",  # Use 0.x for Sphinx-based builds
+    "sphinx-autodoc-typehints",
+]
+
+[project.optional-dependencies]
+scatter = ["torch-scatter==2.1.2"]
+full = ["dftio[scatter]", "dftio[dev]"]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-order==1.2.0",
+    "pytest-cov",
+    "jupyter-book>=0.15,<1.0",
     "sphinx-autodoc-typehints",
 ]
 
