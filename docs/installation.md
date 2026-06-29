@@ -57,7 +57,7 @@ pip install "dftio[scatter]" -f https://data.pyg.org/whl/torch-2.5.0+cu121.html
 
 # Or install from requirements files
 pip install -r requirements.txt          # core only
-pip install -r requirements-full.txt     # core + scatter
+pip install -r requirements-full.txt     # core + scatter + dev
 pip install -r requirements-dev.txt      # core + dev tools
 ```
 

@@ -36,7 +36,7 @@ dev = [
 
 [project.optional-dependencies]
 scatter = ["torch-scatter==2.1.2"]
-full = ["dftio[scatter]"]
+full = ["dftio[scatter]", "dftio[dev]"]
 dev = [
     "pytest>=7.2.0",
     "pytest-order==1.2.0",

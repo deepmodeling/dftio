@@ -78,3 +78,41 @@ def test_integrate(mock_atomic_basis):
     weights = torch.tensor([1.0])
     result_w = sgi.integrate(weights=weights)
     assert result_w.shape == (1,)
+
+
+def test_integrate_without_scatter_raises_error(mock_atomic_basis, monkeypatch):
+    """Test that integrate() raises helpful ImportError when torch-scatter is not installed."""
+    import builtins
+    import sys
+
+    # Remove torch_scatter from sys.modules so cached import is bypassed
+    sys.modules.pop("torch_scatter", None)
+    sys.modules.pop("torch_scatter.scatter_sum", None)
+
+    # Store the original import function
+    _original_import = builtins.__import__
+
+    def _mock_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "torch_scatter":
+            raise ModuleNotFoundError("No module named 'torch_scatter'")
+        return _original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _mock_import)
+
+    atomic_numbers = [1]
+    pbc = [True, True, True]
+    cell = np.eye(3)
+    coordinates = np.array([[0.0, 0.0, 0.0]])
+    grids = np.array([[0.1, 0.1, 0.1]])
+
+    sgi = SingleGridIntegrator(
+        atomic_numbers=atomic_numbers,
+        pbc=pbc,
+        cell=cell,
+        coordinates=coordinates,
+        grids=grids,
+        atomic_basis={"H": mock_atomic_basis},
+    )
+
+    with pytest.raises(ImportError, match="torch-scatter is required"):
+        sgi.integrate()

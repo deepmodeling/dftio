@@ -33,13 +33,15 @@ class SingleGridIntegrator:
     def integrate(self, weights=None):
         try:
             from torch_scatter import scatter_sum
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "torch-scatter is required for grid integration (LDOS calculations). "
-                "Install it with: pip install torch-scatter -f https://data.pyg.org/whl/torch-2.5.0+cpu.html\n"
-                "Or: pip install dftio[scatter] -f https://data.pyg.org/whl/torch-2.5.0+cpu.html\n"
-                "Or: pip install dftio[full] -f https://data.pyg.org/whl/torch-2.5.0+cpu.html"
-            )
+                "Install dftio with the scatter extra:\n"
+                "  pip install \"dftio[scatter]\" -f https://data.pyg.org/whl/torch-<version>+<variant>.html\n"
+                "Or install all optional dependencies:\n"
+                "  pip install \"dftio[full]\" -f https://data.pyg.org/whl/torch-<version>+<variant>.html\n"
+                "For detailed instructions, see: https://deepmodeling.github.io/dftio/installation.html"
+            ) from err
 
         ngrid = len(self.grids)
         dtype = weights.dtype if weights is not None else self.dtype
